@@ -9,5 +9,9 @@ int main() {
     char k[64], v[64];
     assert(extract_key_value("SET foo=bar", k, v, 64, 64) == 0);
     assert(strcmp(k, "foo") == 0 && strcmp(v, "bar") == 0);
+    
+    assert(extract_key("GET key", k, 64) == 0);
+    assert(strcmp(k, "key") == 0);
+
     return 0;
 }
