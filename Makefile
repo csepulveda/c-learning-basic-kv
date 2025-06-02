@@ -23,7 +23,7 @@ TEST_PROTOCOL_SRC := $(TEST_DIR)/test_protocol.c
 TEST_KV_BIN       := $(BIN_DIR)/test_kvstore
 TEST_PROTOCOL_BIN := $(BIN_DIR)/test_protocol
 
-all: $(SERVER_BIN) $(CLIENT_BIN)
+all: $(SERVER_BIN) $(CLIENT_BIN) test integration-test
 
 $(BIN_DIR):
 	mkdir -p $@
