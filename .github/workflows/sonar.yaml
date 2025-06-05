@@ -7,6 +7,15 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+name: SonarCloud
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
 jobs:
   build:
     name: Build and analyze
@@ -19,34 +28,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y lcov
-
       - name: Install Build Wrapper
         uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v5
 
-      - name: Build with coverage and wrapper
+      - name: Build with coverage (wrapped)
         run: |
+          make clean
           build-wrapper-linux-x86-64 --out-dir $BUILD_WRAPPER_OUT_DIR make coverage-build
 
-      - name: Run tests
-        run: make test
-
-      - name: Generate coverage report
+      - name: Run tests to generate .gcda files
         run: |
-          lcov --capture --directory bin --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' --output-file coverage.info  --ignore-errors unused
-          lcov --list coverage.info 
+          make test
+          make integration-test
 
-      - name: Generate coverage XML
-        run: |
-          pip install gcovr
-          gcovr --root . --object-directory bin --xml-pretty -o coverage.xml
-
-      - name: SonarQube Scan
+      - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            --define sonar.cfamily.compile-commands="${{ env.BUILD_WRAPPER_OUT_DIR }}/compile_commands.json"

@@ -57,6 +57,6 @@ clean:
 # Recompilación para cobertura
 coverage-build:
 	$(MAKE) clean
-	$(MAKE) CFLAGS="-Wall -Wextra -O0 -g -fprofile-arcs -ftest-coverage" LDFLAGS="--coverage"
+	$(MAKE) all CFLAGS="-Wall -Wextra -O0 -g -fprofile-arcs -ftest-coverage" LDFLAGS="--coverage"
 
 .PHONY: all test integration-test clean coverage-build
