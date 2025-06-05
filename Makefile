@@ -13,6 +13,7 @@ CLIENT_SRC   := $(SRC_DIR)/client.c
 KVSTORE_SRC  := $(SRC_DIR)/kvstore.c
 PROTOCOL_SRC := $(SRC_DIR)/protocol.c
 COMMANDS_SRC := $(SRC_DIR)/commands.c
+LOGS_SRC := $(SRC_DIR)/logs.c
 
 SERVER_BIN := $(BIN_DIR)/server
 CLIENT_BIN := $(BIN_DIR)/client
@@ -28,10 +29,10 @@ all: $(SERVER_BIN) $(CLIENT_BIN) test integration-test
 $(BIN_DIR):
 	mkdir -p $@
 
-$(SERVER_BIN): $(SERVER_SRC) $(KVSTORE_SRC) $(PROTOCOL_SRC) $(COMMANDS_SRC) | $(BIN_DIR)
+$(SERVER_BIN): $(SERVER_SRC) $(KVSTORE_SRC) $(PROTOCOL_SRC) $(COMMANDS_SRC) $(LOGS_SRC) | $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-$(CLIENT_BIN): $(CLIENT_SRC) $(KVSTORE_SRC) $(PROTOCOL_SRC) $(COMMANDS_SRC) | $(BIN_DIR)
+$(CLIENT_BIN): $(CLIENT_SRC) $(KVSTORE_SRC) $(PROTOCOL_SRC) $(COMMANDS_SRC) $(LOGS_SRC) | $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(TEST_KV_BIN): $(TEST_KV_SRC) $(KVSTORE_SRC) | $(BIN_DIR)

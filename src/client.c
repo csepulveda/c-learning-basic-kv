@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <inttypes.h>
+#include "logs.h"
 
 #include "protocol.h"
 
@@ -54,7 +55,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    printf("Connected to %s:%d\n", server_ip, server_port);
+    log_info("Connected to %s:%d\n", server_ip, server_port);
 
     // Modo argumento por línea de comandos
     if (argc > 1) {
@@ -65,7 +66,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (parse_command(command) == CMD_UNKNOWN) {
-            fprintf(stderr, "Invalid command: %s\n", command);
+            log_error("Invalid command: %s\n", command);
             close(sockfd);
             return 1;
         }

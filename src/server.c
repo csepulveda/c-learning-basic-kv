@@ -10,7 +10,8 @@
 
 #include "kv_store.h"
 #include "protocol.h"
-#include "commands.h"  // nuevo
+#include "commands.h"
+#include "logs.h"
 
 #define SERVER_PORT 8080
 #define BUFFER_SIZE 1024
@@ -69,7 +70,8 @@ int main() {
     bind(serverfd, (struct sockaddr*)&addr, sizeof(addr));
     listen(serverfd, 5);
 
-    printf("Server listening on port %d...\n", SERVER_PORT);
+    
+    log_info("Server listening on port %d...\n", SERVER_PORT);
 
     while (1) {
         int clientfd = accept(serverfd, NULL, NULL);
