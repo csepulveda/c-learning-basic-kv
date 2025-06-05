@@ -18,6 +18,6 @@ jobs:
       run: make coverage-build
 
     - name: SonarQube Scan
-      uses: sonarsource/sonarcloud-github-action@5
+      uses: sonarsource/sonarcloud-github-action@v5
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
