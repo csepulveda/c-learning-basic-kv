@@ -1,23 +1,47 @@
+name: SonarQube
+
 on:
   push:
     branches:
       - main
-      - dev
   pull_request:
-      types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened]
 
-name: Main Workflow
 jobs:
-  sonarqube:
+  build:
+    name: Build and analyze
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Run make Coverage and test.
-      run: make coverage-build
+    env:
+      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
 
-    - name: SonarQube Scan
-      uses: sonarsource/sonarcloud-github-action@v5
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y lcov
+
+      - name: Install Build Wrapper
+        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v5
+
+      - name: Build with coverage and wrapper
+        run: |
+          build-wrapper-linux-x86-64 --out-dir $BUILD_WRAPPER_OUT_DIR make coverage-build
+
+      - name: Run tests
+        run: make test
+
+      - name: Generate coverage report
+        run: |
+          lcov --capture --directory bin --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' --output-file coverage.info
+          lcov --list coverage.info
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            --define sonar.cfamily.compile-commands="${{ env.BUILD_WRAPPER_OUT_DIR }}/compile_commands.json"

@@ -1,14 +1,8 @@
 .DEFAULT_GOAL := all
 
-ifdef COVERAGE
-	CFLAGS   := -Wall -Wextra -O0 -g -fprofile-arcs -ftest-coverage
-	LDFLAGS  := -fprofile-arcs -ftest-coverage -lpthread
-else
-	CFLAGS   := -Wall -Wextra -O2
-	LDFLAGS  := -lpthread
-endif
-
 CC       := gcc
+CFLAGS   := -Wall -Wextra -O2
+LDFLAGS  := -lpthread
 
 SRC_DIR     := src
 BIN_DIR     := bin
@@ -19,7 +13,7 @@ CLIENT_SRC   := $(SRC_DIR)/client.c
 KVSTORE_SRC  := $(SRC_DIR)/kvstore.c
 PROTOCOL_SRC := $(SRC_DIR)/protocol.c
 COMMANDS_SRC := $(SRC_DIR)/commands.c
-LOGS_SRC := $(SRC_DIR)/logs.c
+LOGS_SRC     := $(SRC_DIR)/logs.c
 
 SERVER_BIN := $(BIN_DIR)/server
 CLIENT_BIN := $(BIN_DIR)/client
@@ -57,13 +51,12 @@ integration-test:
 	@echo "Running integration tests..."
 	@tests/integration_test.sh
 
+clean:
+	rm -rf $(BIN_DIR) *.gcda *.gcno *.info *.gcov coverage.info
+
+# Recompilación para cobertura
 coverage-build:
 	$(MAKE) clean
-	$(MAKE) COVERAGE=1 all
+	$(MAKE) CFLAGS="-Wall -Wextra -O0 -g -fprofile-arcs -ftest-coverage" LDFLAGS="--coverage"
 
-clean:
-	rm -rf $(BIN_DIR)
-	find . -iname "*.sample" | xargs rm -fr {}
-	find . -iname "*.gcov" | xargs rm -fr {}  
-
-.PHONY: all test integration-test clean
+.PHONY: all test integration-test clean coverage-build
