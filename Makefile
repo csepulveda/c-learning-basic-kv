@@ -1,8 +1,14 @@
 .DEFAULT_GOAL := all
 
+ifdef COVERAGE
+	CFLAGS   := -Wall -Wextra -O0 -g -fprofile-arcs -ftest-coverage
+	LDFLAGS  := -fprofile-arcs -ftest-coverage -lpthread
+else
+	CFLAGS   := -Wall -Wextra -O2
+	LDFLAGS  := -lpthread
+endif
+
 CC       := gcc
-CFLAGS   := -Wall -Wextra -O2
-LDFLAGS  := -lpthread
 
 SRC_DIR     := src
 BIN_DIR     := bin
@@ -51,7 +57,13 @@ integration-test:
 	@echo "Running integration tests..."
 	@tests/integration_test.sh
 
+coverage-build:
+	$(MAKE) clean
+	$(MAKE) COVERAGE=1 all
+
 clean:
 	rm -rf $(BIN_DIR)
+	find . -iname "*.sample" | xargs rm -fr {}
+	find . -iname "*.gcov" | xargs rm -fr {}  
 
 .PHONY: all test integration-test clean
