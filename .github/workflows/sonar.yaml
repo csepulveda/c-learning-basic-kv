@@ -19,8 +19,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y lcov
+#      - name: Install dependencies
+#        run: sudo apt-get update && sudo apt-get install -y lcov
 
       - name: Install Build Wrapper
         uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v5
@@ -37,6 +37,10 @@ jobs:
           lcov --capture --directory bin --output-file coverage.info
           lcov --remove coverage.info '/usr/*' --output-file coverage.info  --ignore-errors unused
           lcov --list coverage.info 
+
+      - name: Generate coverage XML
+        run: |
+          gcovr --root . --object-directory bin --xml-pretty -o coverage.xml
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
