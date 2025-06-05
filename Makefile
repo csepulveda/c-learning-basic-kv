@@ -24,7 +24,7 @@ TEST_PROTOCOL_SRC := $(TEST_DIR)/test_protocol.c
 TEST_KV_BIN       := $(BIN_DIR)/test_kvstore
 TEST_PROTOCOL_BIN := $(BIN_DIR)/test_protocol
 
-all: $(SERVER_BIN) $(CLIENT_BIN) test integration-test
+all: $(SERVER_BIN) $(CLIENT_BIN)
 
 $(BIN_DIR):
 	mkdir -p $@
@@ -52,7 +52,7 @@ integration-test:
 	@tests/integration_test.sh
 
 clean:
-	rm -rf $(BIN_DIR) *.gcda *.gcno *.info *.gcov coverage.info
+	rm -rf $(BIN_DIR) *.gcda *.gcno *.info *.gcov coverage.xml
 
 # Recompilación para cobertura
 coverage-build:
