@@ -34,7 +34,7 @@ jobs:
 
       - name: Collect coverage into one XML report
         run: |
-          pip install gcovr==5.0
+          pip install gcovr
           gcovr --sonarqube > coverage.xml
 
       - name: SonarCloud scan
