@@ -16,25 +16,23 @@ int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_siz
     if (!buffer || buffer_size == 0) return -1;
 
     size_t offset = 0;
-    for (int i = 1; i < argc && offset < buffer_size - 1; i++) {
-        size_t arg_len = strnlen(argv[i], buffer_size - offset - 1);
-        if (offset + arg_len >= buffer_size - 1) {
-            return -1;
-        }
 
-        memcpy(buffer + offset, argv[i], arg_len);
-        offset += arg_len;
+    for (int i = 1; i < argc; i++) {
+        const char *word = argv[i];
+        size_t word_len = strnlen(word, buffer_size);
 
-        if (i < argc - 1) {
-            if (offset + 1 >= buffer_size - 1) {
-                return -1;
-            }
+        if (i > 1) {
+            if (offset + 1 >= buffer_size) break;
             buffer[offset++] = ' ';
         }
-    
+
+        if (offset + word_len >= buffer_size) break;
+
+        memcpy(buffer + offset, word, word_len);
+        offset += word_len;
     }
 
-    buffer[offset] = '\0';
+    buffer[offset < buffer_size ? offset : buffer_size - 1] = '\0';
     return 0;
 }
 
@@ -47,13 +45,13 @@ int send_command(int sockfd, const char *command) {
         log_error("Command too long: %s", command);
         return -1;
     }
-    int n = send(sockfd, command, cmd_len, 0);
+    ssize_t bytes_sent = send(sockfd, command, cmd_len, 0);
 
     gettimeofday(&end, NULL);
     uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000ULL + (end.tv_usec - start.tv_usec);
     if (strcmp(command, "PING") == 0) {
         printf("Ping response time: %" PRIu64 " microseconds\n", delta_us);
     }
-    
-    return n;
+
+    return (int)bytes_sent;
 }
