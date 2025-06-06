@@ -16,6 +16,11 @@ void cmd_ping(int clientfd) {
     send(clientfd, response, strlen(response), 0);
 }
 
+/**
+ * @brief Sends the current server time to the client.
+ *
+ * Formats the current system time as a human-readable string and transmits it to the connected client.
+ */
 void cmd_time(int clientfd) {
     time_t now = time(NULL);
     char timestr[BUFFER_SIZE];
@@ -57,6 +62,11 @@ void cmd_get(int clientfd, const char *buffer) {
     }
 }
 
+/**
+ * @brief Handles a delete command from the client to remove a key from the key-value store.
+ *
+ * Parses the key from the input buffer and attempts to delete it from the store. Sends "DELETED" if successful, "NOT FOUND" if the key does not exist, or "ERROR" if the key could not be parsed.
+ */
 void cmd_del(int clientfd, const char *buffer) {
     char key[128];
     if (extract_key(buffer, key, sizeof(key)) == 0) { 
