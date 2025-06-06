@@ -32,5 +32,38 @@ $CLIENT_BIN "TIME" | grep -q "20" || fail "TIME did not return expected format"
 # Test PING
 $CLIENT_BIN "PING" | grep -q "PONG" || fail "PING did not return PONG"
 
-echo "✅ All integration tests passed!"
+# Test Very Long Command
+LONG_CMD=$(head -c 1000 < /dev/zero | tr '\0' 'A')
+output=$($CLIENT_BIN "SET long=$LONG_CMD")
+echo "$output" | grep -q "ERROR" || fail "SET long command did not return ERROR"
+
+# Test error on invalid command
+$CLIENT_BIN "INVALID COMMAND" 2>&1 | grep -q "ERROR" || fail "Invalid command did not return ERROR"
+
+# test defining host and port
+HOST=127.0.0.1 PORT=8080 $CLIENT_BIN "SET test=123"|grep -q "OK" || fail "SET did not return OK"
+
+# Test interactive mode
+$CLIENT_BIN <<EOF | grep -q "OK"
+SET interactive=123
+GET interactive
+DEL interactive
+TIME
+PING
+exit
+EOF
+
+# test bad command definition
+$CLIENT_BIN "SET test" 2>&1 | grep -q "ERROR" || fail "Bad command did not return ERROR"
+
+# test invalid command
+LONG_CMD=$(head -c 1000 < /dev/zero | tr '\0' 'A')
+$CLIENT_BIN "$LONG_CMD" 2>&1 | grep -q "Invalid command" || fail "Very long command did not return Invalid command"
+
+
 kill $SERVER_PID
+
+# Test Very Long Command with GET
+$CLIENT_BIN "PING"  2>&1  | grep -q "Connection refused" || fail "Server did not shut down properly"
+
+echo "✅ All integration tests passed!"

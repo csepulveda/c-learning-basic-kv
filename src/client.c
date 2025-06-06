@@ -9,25 +9,11 @@
 #include <sys/time.h>
 #include <inttypes.h>
 #include "logs.h"
-
+#include "client_utils.h"
 #include "protocol.h"
 
 #define BUFFER_SIZE 1024
 
-int send_command(int sockfd, const char *command) {
-    struct timeval start, end;
-    gettimeofday(&start, NULL); 
-    
-    int n = send(sockfd, command, strlen(command), 0);
-   
-    gettimeofday(&end, NULL);
-    uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000ULL + (end.tv_usec - start.tv_usec);
-    if (strcmp(command, "PING") == 0) {
-        printf("Ping response time: %" PRIu64 " microseconds\n", delta_us);
-    }
-    
-    return n;
-}
 
 int main(int argc, char *argv[]) {
     int sockfd, status;
@@ -60,9 +46,11 @@ int main(int argc, char *argv[]) {
     // Modo argumento por línea de comandos
     if (argc > 1) {
         char command[BUFFER_SIZE] = {0};
-        for (int i = 1; i < argc; i++) {
-            strcat(command, argv[i]);
-            if (i < argc - 1) strcat(command, " ");
+
+        if (build_command_string(argc, argv, command, sizeof(command)) != 0) {
+            log_error("Failed to construct command\n");
+            close(sockfd);
+            return 1;
         }
 
         if (parse_command(command) == CMD_UNKNOWN) {
