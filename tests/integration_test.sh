@@ -54,7 +54,10 @@ exit
 EOF
 
 # test bad command definition
-$CLIENT_BIN "SET test=" 2>&1 | grep -q "ERROR" || fail "Bad command did not return ERROR"
+$CLIENT_BIN "SET test" 2>&1 | grep -q "ERROR" || fail "Bad command did not return ERROR"
+
+# test invalid command
+$CLIENT_BIN $(for i in {1..500}; do echo -n "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA "; done) 2>&1 | grep -q "Invalid command" || fail "Invalid command did not return ERROR"
 
 
 kill $SERVER_PID
