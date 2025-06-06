@@ -23,13 +23,14 @@ int extract_key_value(const char *message, char *key, char *value, size_t key_si
 
     if (key_len >= key_size || value_len >= value_size) return -1;
 
-    strncpy(key, space + 1, key_len);
-    key[key_len] = '\0';
+
+    size_t copy_len = key_len < key_size - 1 ? key_len : key_size - 1;
+    strncpy(key, space + 1, copy_len);
+    key[copy_len] = '\0';
 
     strncpy(value, equal + 1, value_size - 1);
     value[value_size - 1] = '\0';
 
-    // Eliminar salto de línea si existe
     char *newline = strchr(value, '\n');
     if (newline) *newline = '\0';
 
