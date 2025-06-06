@@ -1,20 +1,18 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <sys/time.h>
+#include <sys/socket.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <netinet/in.h>
 #include <inttypes.h>
+#include <fcntl.h>
+#include <arpa/inet.h>
+#include "protocol.h"
+
 #include "logs.h"
 #include "client_utils.h"
-#include "protocol.h"
-#include <stdbool.h>
-
-#define BUFFER_SIZE 1024
-
 
 int main(int argc, char *argv[]) {
     int sockfd, status;

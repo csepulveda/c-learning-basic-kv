@@ -1,19 +1,19 @@
 // server.c
+#include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <pthread.h>
+#include <unistd.h>
 
-#include "kv_store.h"
-#include "protocol.h"
 #include "commands.h"
+#include "kv_store.h"
 #include "logs.h"
+#include "protocol.h"
 
-#define SERVER_PORT 8080
 #define BUFFER_SIZE 1024
 
 void* handle_client(void *arg) {
@@ -59,6 +59,9 @@ void* handle_client(void *arg) {
 
 int main() {
     kv_init();
+    int status;
+    int SERVER_PORT = getenv("PORT") ? atoi(getenv("PORT")) : 8080;
+
 
     int serverfd = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in addr = {
@@ -67,10 +70,18 @@ int main() {
         .sin_addr.s_addr = INADDR_ANY
     };
 
-    bind(serverfd, (struct sockaddr*)&addr, sizeof(addr));
-    listen(serverfd, 5);
+    status = bind(serverfd, (struct sockaddr*)&addr, sizeof(addr));
+    if (status != 0 ) {
+        log_error("Error binding the port: %s", strerror(errno));
+        return 1;
+    }
 
-    
+    status = listen(serverfd, 5);
+    if (status != 0) {
+        log_error("Error listening: %s", strerror(errno));
+        return 1;
+    }
+
     log_info("Server listening on port %d...\n", SERVER_PORT);
 
     while (1) {

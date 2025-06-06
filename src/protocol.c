@@ -1,14 +1,15 @@
 #include <string.h>
 #include <stdio.h>
+
 #include "protocol.h"
 
 command_t parse_command(const char *message) {
+    if (strncmp(message, "SET", 3) == 0) return CMD_SET;
+    if (strncmp(message, "GET", 3) == 0) return CMD_GET;
+    if (strncmp(message, "DEL", 3) == 0) return CMD_DEL;
     if (strncmp(message, "PING", 4) == 0) return CMD_PING;
     if (strncmp(message, "TIME", 4) == 0) return CMD_TIME;
     if (strncmp(message, "GOODBYE", 7) == 0) return CMD_GOODBYE;
-    if (strncmp(message, "SET ", 4) == 0) return CMD_SET;
-    if (strncmp(message, "GET ", 4) == 0) return CMD_GET;
-    if (strncmp(message, "DEL ", 4) == 0) return CMD_DEL;
     return CMD_UNKNOWN;
 }
 

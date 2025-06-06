@@ -1,16 +1,12 @@
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h> 
 #include <string.h>
-#include <sys/time.h>
-#include <stdint.h>
 #include <sys/socket.h>
-#include <inttypes.h>
+#include <sys/time.h>
 
-#include "logs.h"
 #include "client_utils.h"
-#include "protocol.h"
-#include "commands.h"
-
-#define BUFFER_SIZE 1024
+#include "logs.h"
 
 int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_size) {
     if (!buffer || buffer_size == 0) return -1;

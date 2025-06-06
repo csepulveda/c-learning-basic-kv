@@ -1,5 +1,6 @@
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+
 #include "kv_store.h"
 
 static kv_pair store[MAX_KV_PAIRS];
