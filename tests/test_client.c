@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
-#include "../src/client_utils.h" 
+#include "../src/client_utils.h"  // Asegúrate de que contiene build_command_string()
 
 void test_single_argument() {
     char *argv[] = { "client", "PING" };
@@ -19,7 +19,7 @@ void test_multiple_arguments() {
     assert(strcmp(buffer, "SET key=value") == 0);
 }
 
-void test_long_input() {
+void test_long_input_truncates() {
     char *argv[100];
     argv[0] = "client";
     for (int i = 1; i < 99; i++) {
@@ -27,10 +27,9 @@ void test_long_input() {
     }
     argv[99] = NULL;
 
-    char buffer[128] = {0};
+    char buffer[64] = {0};  // deliberately small
     int result = build_command_string(99, argv, buffer, sizeof(buffer));
-    assert(result == 0);
-    assert(strlen(buffer) < sizeof(buffer)); // Asegura que no hay overflow
+    assert(result == -1);  // debe fallar porque se excede el tamaño del buffer
 }
 
 void test_empty_buffer() {
@@ -42,7 +41,7 @@ void test_empty_buffer() {
 int main() {
     test_single_argument();
     test_multiple_arguments();
-    test_long_input();
+    test_long_input_truncates();
     test_empty_buffer();
     printf("✅ All build_command_string tests passed\n");
     return 0;
