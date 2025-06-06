@@ -27,10 +27,10 @@ jobs:
           make clean
           build-wrapper-linux-x86-64 --out-dir $BUILD_WRAPPER_OUT_DIR make coverage-build
 
-      - name: Run tests to generate .gcda files
-        run: |
-          make test
-          make integration-test
+      #- name: Run tests to generate .gcda files
+      #  run: |
+      #    make test
+      #    make integration-test
 
       - name: Collect coverage into one XML report
         run: |

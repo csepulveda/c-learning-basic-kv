@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 #include "../src/protocol.h"
 
 int main() {
@@ -13,5 +14,6 @@ int main() {
     assert(extract_key("GET key", k, 64) == 0);
     assert(strcmp(k, "key") == 0);
 
+    printf("✅ Simple protocol tests passed\n");
     return 0;
 }
