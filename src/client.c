@@ -11,12 +11,14 @@
 #include "logs.h"
 #include "client_utils.h"
 #include "protocol.h"
+#include <stdbool.h>
 
 #define BUFFER_SIZE 1024
 
 
 int main(int argc, char *argv[]) {
     int sockfd, status;
+    ssize_t status_r;
     struct sockaddr_in addr;
     char buffer[BUFFER_SIZE];
 
@@ -68,23 +70,28 @@ int main(int argc, char *argv[]) {
     }
 
     // Modo interactivo
-    while (1) {
+    bool running = true;
+
+    while (running) {
         printf("Enter command (or 'exit' to quit): ");
         memset(buffer, 0, sizeof(buffer));
         fgets(buffer, sizeof(buffer), stdin);
 
-        if (strncmp(buffer, "exit", 4) == 0)
-            break;
+        if (strncmp(buffer, "exit", 4) == 0) {
+            running = false;
+            continue;
+        }
 
         send_command(sockfd, buffer);
 
         memset(buffer, 0, sizeof(buffer));
-        status = recv(sockfd, buffer, sizeof(buffer), 0);
-        if (status > 0) {
+        status_r = recv(sockfd, buffer, sizeof(buffer), 0);
+
+        if (status_r > 0) {
             printf("Server: %s", buffer);
         } else {
             perror("recv");
-            break;
+            running = false;
         }
     }
 
