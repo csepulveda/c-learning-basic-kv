@@ -64,7 +64,29 @@ void test_error_log() {
     free(output);
 }
 
+void test_va_wrapper(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    log_message_va(LOG_LEVEL_INFO, "va_test.c", 77, fmt, args);
+    va_end(args);
+}
+
+void log_fn_va() {
+    test_va_wrapper("VA log: %s = %d", "value", 42);
+}
+
+void test_va_log() {
+    CURRENT_LOG_LEVEL = LOG_LEVEL_DEBUG;
+
+    char *output = capture_stderr_output(log_fn_va);
+    assert(strstr(output, "INFO"));
+    assert(strstr(output, "va_test.c"));
+    assert(strstr(output, "VA log: value = 42"));
+    free(output);
+}
+
 int main() {
+    test_va_log();
     test_debug_log();
     test_info_log();
     test_error_log();
