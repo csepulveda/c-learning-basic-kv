@@ -53,7 +53,7 @@ void log_message_va(LogLevel level, const char *file, int line, const char *fmt,
 	char timebuf[20];
 	strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", &lt_data);
 
-	fprintf(stderr, "%s[%s] %s:%d: ", level_to_color(level), level_to_string(level), file, line);
+	fprintf(stderr, "%s %s[%s] %s:%d: ", timebuf, level_to_color(level), level_to_string(level), file, line);
 	vfprintf(stderr, fmt, args);
 	fprintf(stderr, "\033[0m\n");
 }
