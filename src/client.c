@@ -17,9 +17,14 @@
 int send_command(int sockfd, const char *command) {
     struct timeval start, end;
     gettimeofday(&start, NULL); 
-    
-    int n = send(sockfd, command, strlen(command), 0);
-   
+
+    size_t cmd_len = strnlen(command, BUFFER_SIZE);
+    if (cmd_len >= BUFFER_SIZE) {
+        log_error("Command too long: %s", command);
+        return -1;
+    }
+    int n = send(sockfd, command, cmd_len, 0);
+
     gettimeofday(&end, NULL);
     uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000ULL + (end.tv_usec - start.tv_usec);
     if (strcmp(command, "PING") == 0) {
