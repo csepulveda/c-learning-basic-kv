@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
-#include "../src/client_utils.h"  // Asegúrate de que contiene build_command_string()
+#include "../src/client_utils.h"
 
 #define BUFFER_SIZE 1024
 
@@ -29,9 +29,9 @@ void test_long_input_truncates() {
     }
     argv[99] = NULL;
 
-    char buffer[64] = {0};  // deliberately small
+    char buffer[64] = {0};
     int result = build_command_string(99, argv, buffer, sizeof(buffer));
-    assert(result == -1);  // debe fallar porque se excede el tamaño del buffer
+    assert(result == -1);
 }
 
 void test_empty_buffer() {
