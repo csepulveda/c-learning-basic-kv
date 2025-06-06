@@ -9,6 +9,8 @@
 #include <sys/time.h>
 #include <inttypes.h>
 #include "logs.h"
+#include <stdbool.h>
+
 
 #include "protocol.h"
 
@@ -81,25 +83,30 @@ int main(int argc, char *argv[]) {
     }
 
     // Modo interactivo
-    while (1) {
+    bool running = true;
+    while (running) {
         printf("Enter command (or 'exit' to quit): ");
         memset(buffer, 0, sizeof(buffer));
         fgets(buffer, sizeof(buffer), stdin);
 
-        if (strncmp(buffer, "exit", 4) == 0)
-            break;
+        if (strncmp(buffer, "exit", 4) == 0) {
+            running = false;
+            continue;
+        }
 
         send_command(sockfd, buffer);
 
         memset(buffer, 0, sizeof(buffer));
         status_r = recv(sockfd, buffer, sizeof(buffer), 0);
+
         if (status_r > 0) {
             printf("Server: %s", buffer);
         } else {
             perror("recv");
-            break;
+            running = false;
         }
     }
+ 
 
     close(sockfd);
     return 0;
