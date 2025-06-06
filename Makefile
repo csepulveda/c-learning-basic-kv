@@ -17,6 +17,7 @@ PROTOCOL_SRC := $(SRC_DIR)/protocol.c
 COMMANDS_SRC := $(SRC_DIR)/commands.c
 LOGS_SRC     := $(SRC_DIR)/logs.c
 CLIENT_UTILS_SRC := $(SRC_DIR)/client_utils.c
+SERVER_UTILS_SRC := $(SRC_DIR)/server_utils.c
 
 SERVER_BIN := $(BIN_DIR)/server
 CLIENT_BIN := $(BIN_DIR)/client
@@ -25,18 +26,20 @@ TEST_KV_SRC       := $(TEST_DIR)/test_kvstore.c
 TEST_PROTOCOL_SRC := $(TEST_DIR)/test_protocol.c
 TEST_LOGS_SRC := $(TEST_DIR)/test_logs.c
 TEST_CLIENT_SRC := $(TEST_DIR)/test_client.c
+TEST_SERVER_SRC := $(TEST_DIR)/test_server.c
 
 TEST_KV_BIN       := $(BIN_DIR)/test_kvstore
 TEST_PROTOCOL_BIN := $(BIN_DIR)/test_protocol
 TEST_LOGS_BIN := $(BIN_DIR)/test_logs
 TEST_CLIENT_BIN := $(BIN_DIR)/test_client
+TEST_SERVER_BIN := $(BIN_DIR)/test_server
 
 all: $(SERVER_BIN) $(CLIENT_BIN)
 
 $(BIN_DIR):
 	mkdir -p $@
 
-$(SERVER_BIN): $(SERVER_SRC) $(KVSTORE_SRC) $(PROTOCOL_SRC) $(COMMANDS_SRC) $(LOGS_SRC) | $(BIN_DIR)
+$(SERVER_BIN): $(SERVER_SRC) $(SERVER_UTILS_SRC) $(KVSTORE_SRC) $(PROTOCOL_SRC) $(COMMANDS_SRC) $(LOGS_SRC) | $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(CLIENT_BIN): $(CLIENT_SRC) $(KVSTORE_SRC) $(PROTOCOL_SRC) $(COMMANDS_SRC) $(LOGS_SRC) $(CLIENT_UTILS_SRC) | $(BIN_DIR)
@@ -54,7 +57,10 @@ $(TEST_LOGS_BIN): $(TEST_LOGS_SRC) $(LOGS_SRC) | $(BIN_DIR)
 $(TEST_CLIENT_BIN): $(TEST_CLIENT_SRC) $(CLIENT_UTILS_SRC) $(LOGS_SRC) $(PROTOCOL_SRC)| $(BIN_DIR)
 	$(CC) $(CFLAGS_TEST) $(LDFLAGS_TEST) -o $@ $^
 
-test: $(TEST_KV_BIN) $(TEST_PROTOCOL_BIN) $(TEST_LOGS_BIN) $(TEST_CLIENT_BIN)
+$(TEST_SERVER_BIN): $(TEST_SERVER_SRC) $(PROTOCOL_SRC) $(SERVER_UTILS_SRC) $(KVSTORE_SRC) $(COMMANDS_SRC) $(LOGS_SRC)| $(BIN_DIR)
+	$(CC) $(CFLAGS_TEST) $(LDFLAGS_TEST) -o $@ $^
+
+test: $(TEST_KV_BIN) $(TEST_PROTOCOL_BIN) $(TEST_LOGS_BIN) $(TEST_CLIENT_BIN) $(TEST_SERVER_BIN)
 	@echo "Running kvstore tests..."
 	@$(TEST_KV_BIN)
 	@echo "Running protocol tests..."
@@ -63,6 +69,9 @@ test: $(TEST_KV_BIN) $(TEST_PROTOCOL_BIN) $(TEST_LOGS_BIN) $(TEST_CLIENT_BIN)
 	@$(TEST_LOGS_BIN)
 	@echo "Running client tests..."
 	@$(TEST_CLIENT_BIN)
+	@echo "Running server tests..."
+	@$(TEST_SERVER_BIN)
+
 
 integration-test:
 	@echo "Running integration tests..."
