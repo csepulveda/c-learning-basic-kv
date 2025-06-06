@@ -43,7 +43,8 @@ int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_siz
 }
 
 int send_command(int sockfd, const char *command) {
-    struct timeval start, end;
+    struct timeval start;
+    struct timeval end;
     gettimeofday(&start, NULL); 
 
     size_t cmd_len = strnlen(command, BUFFER_SIZE);
