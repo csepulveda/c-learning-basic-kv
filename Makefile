@@ -2,7 +2,9 @@
 
 CC       := gcc
 CFLAGS   := -Wall -Wextra -O2
+CFLAGS_TEST := -Wall -Wextra -O0 -g -fprofile-arcs -ftest-coverage
 LDFLAGS  := -lpthread
+LDFLAGS_TEST := --coverage
 
 SRC_DIR     := src
 BIN_DIR     := bin
@@ -20,9 +22,11 @@ CLIENT_BIN := $(BIN_DIR)/client
 
 TEST_KV_SRC       := $(TEST_DIR)/test_kvstore.c
 TEST_PROTOCOL_SRC := $(TEST_DIR)/test_protocol.c
+TEST_LOGS_SRC := $(TEST_DIR)/test_logs.c
 
 TEST_KV_BIN       := $(BIN_DIR)/test_kvstore
 TEST_PROTOCOL_BIN := $(BIN_DIR)/test_protocol
+TEST_LOGS_BIN := $(BIN_DIR)/test_logs
 
 all: $(SERVER_BIN) $(CLIENT_BIN)
 
@@ -36,16 +40,21 @@ $(CLIENT_BIN): $(CLIENT_SRC) $(KVSTORE_SRC) $(PROTOCOL_SRC) $(COMMANDS_SRC) $(LO
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(TEST_KV_BIN): $(TEST_KV_SRC) $(KVSTORE_SRC) | $(BIN_DIR)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS_TEST) $(LDFLAGS_TEST) -o $@ $^
 
 $(TEST_PROTOCOL_BIN): $(TEST_PROTOCOL_SRC) $(PROTOCOL_SRC) | $(BIN_DIR)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS_TEST) $(LDFLAGS_TEST) -o $@ $^
 
-test: $(TEST_KV_BIN) $(TEST_PROTOCOL_BIN)
+$(TEST_LOGS_BIN): $(TEST_LOGS_SRC) $(LOGS_SRC) | $(BIN_DIR)
+	$(CC) $(CFLAGS_TEST) $(LDFLAGS_TEST) -o $@ $^
+
+test: $(TEST_KV_BIN) $(TEST_PROTOCOL_BIN) $(TEST_LOGS_BIN)
 	@echo "Running kvstore tests..."
 	@$(TEST_KV_BIN)
 	@echo "Running protocol tests..."
 	@$(TEST_PROTOCOL_BIN)
+	@echo "Running logs tests..."
+	@$(TEST_LOGS_BIN)
 
 integration-test:
 	@echo "Running integration tests..."
@@ -57,6 +66,6 @@ clean:
 # Recompilación para cobertura
 coverage-build:
 	$(MAKE) clean
-	$(MAKE) all CFLAGS="-Wall -Wextra -O0 -g -fprofile-arcs -ftest-coverage" LDFLAGS="--coverage"
+	$(MAKE) all CFLAGS="$(CFLAGS_TEST)" LDFLAGS="$(LDFLAGS_TEST)"
 
 .PHONY: all test integration-test clean coverage-build
