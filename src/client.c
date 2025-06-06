@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = PF_INET;
-    addr.sin_port = htons(server_port);
+    addr.sin_port = htons((uint16_t)server_port);
     inet_aton(server_ip, &addr.sin_addr);
 
     status = connect(sockfd, (struct sockaddr *) &addr, sizeof(addr));
