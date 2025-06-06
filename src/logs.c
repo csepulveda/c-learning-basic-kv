@@ -23,22 +23,17 @@ static const char *level_to_color(LogLevel level) {
 	}
 }
 
-void log_message(LogLevel level, const char *file, int line, const char *fmt, ...) {
+void log_message_va(LogLevel level, const char *file, int line, const char *fmt, va_list args) {
 	if (level < CURRENT_LOG_LEVEL) return;
-
+	
 	time_t t = time(NULL);
 	struct tm lt_data;
-	struct tm *lt = localtime_r(&t, &lt_data);
+	localtime_r(&t, &lt_data);
 
 	char timebuf[20];
-	strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", lt);
+	strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", &lt_data);
 
 	fprintf(stderr, "%s[%s] %s:%d: ", level_to_color(level), level_to_string(level), file, line);
-    
-	va_list args;
-	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
-	va_end(args);
-
 	fprintf(stderr, "\033[0m\n");
 }
