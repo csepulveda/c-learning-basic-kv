@@ -7,15 +7,20 @@ int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_siz
     size_t offset = 0;
     for (int i = 1; i < argc && offset < buffer_size - 1; i++) {
         size_t arg_len = strnlen(argv[i], buffer_size - offset - 1);
-        if (offset + arg_len >= buffer_size - 1)
-            break;
+        if (offset + arg_len >= buffer_size - 1) {
+            return -1;
+        }
 
         memcpy(buffer + offset, argv[i], arg_len);
         offset += arg_len;
 
-        if (i < argc - 1 && offset < buffer_size - 2) {
+        if (i < argc - 1) {
+            if (offset + 1 >= buffer_size - 1) {
+                return -1;
+            }
             buffer[offset++] = ' ';
         }
+    
     }
 
     buffer[offset] = '\0';
