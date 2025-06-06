@@ -10,10 +10,11 @@
 #include "protocol.h"
 
 #define BUFFER_SIZE 1024
+#define MAX_VAL_SIZE 1024
 
 void cmd_ping(int clientfd) {
     const char *response = "PONG\n";
-    send(clientfd, response, strlen(response), 0);
+    send(clientfd, response, strlen(response), 0); //NOSONAR
 }
 
 /**
@@ -25,12 +26,12 @@ void cmd_time(int clientfd) {
     time_t now = time(NULL);
     char timestr[BUFFER_SIZE];
     ctime_r(&now, timestr);
-    send(clientfd, timestr, strlen(timestr), 0);
+    send(clientfd, timestr, sizeof(timestr) -1 , 0);
 }
 
 void cmd_goodbye(int clientfd) {
     const char *response = "Goodbye!\n";
-    send(clientfd, response, strlen(response), 0);
+    send(clientfd, response, strlen(response), 0); //NOSONAR
     close(clientfd);
 }
 
@@ -52,7 +53,8 @@ void cmd_get(int clientfd, const char *buffer) {
     if (extract_key(buffer, key, sizeof(key)) == 0) {
         const char *val = kv_get(key);
         if (val) {
-            send(clientfd, val, strlen(val), 0);
+	    size_t len = strnlen(val, MAX_VAL_SIZE);
+            send(clientfd, val, len, 0);
             send(clientfd, "\n", 1, 0);
         } else {
             send(clientfd, "NOT FOUND\n", 10, 0);

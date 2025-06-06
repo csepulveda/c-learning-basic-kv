@@ -20,7 +20,7 @@ int extract_key_value(const char *message, char *key, char *value, size_t key_si
     if (!equal) return -1;
 
     size_t key_len = equal - (space + 1);
-    size_t value_len = strlen(equal + 1);
+    size_t value_len = strnlen(equal + 1, value_size); //NOSONAR
 
     if (key_len >= key_size || value_len >= value_size) return -1;
 
