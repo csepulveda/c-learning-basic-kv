@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include "../src/client_utils.h"  // Asegúrate de que contiene build_command_string()
 
+#define BUFFER_SIZE 1024
+
 void test_single_argument() {
     char *argv[] = { "client", "PING" };
     char buffer[1024] = {0};
@@ -38,11 +40,22 @@ void test_empty_buffer() {
     assert(result == -1);
 }
 
+void test_send_command_too_long() {
+    int dummy_fd = -1;
+    char long_cmd[BUFFER_SIZE + 100];
+    memset(long_cmd, 'A', sizeof(long_cmd) - 1);
+    long_cmd[sizeof(long_cmd) - 1] = '\0';
+
+    int result = send_command(dummy_fd, long_cmd);
+    assert(result == -1);
+}
+
 int main() {
     test_single_argument();
     test_multiple_arguments();
     test_long_input_truncates();
     test_empty_buffer();
+    test_send_command_too_long();
     printf("✅ All build_command_string tests passed\n");
     return 0;
 }
