@@ -61,8 +61,8 @@ int main(int argc, char *argv[]) {
     if (argc > 1) {
         char command[BUFFER_SIZE] = {0};
         for (int i = 1; i < argc; i++) {
-            strcat(command, argv[i]);
-            if (i < argc - 1) strcat(command, " ");
+            strncat(command, argv[i], sizeof(command) - strlen(command) - 1);
+            if (i < argc - 1) strncat(command, " ", sizeof(command) - strlen(command) - 1);
         }
 
         if (parse_command(command) == CMD_UNKNOWN) {
