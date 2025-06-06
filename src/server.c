@@ -21,7 +21,7 @@ int main() {
     int serverfd = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in addr = {
         .sin_family = AF_INET,
-        .sin_port = htons(SERVER_PORT),
+        .sin_port = htons((uint16_t)SERVER_PORT),
         .sin_addr.s_addr = INADDR_ANY
     };
 
