@@ -32,5 +32,24 @@ $CLIENT_BIN "TIME" | grep -q "20" || fail "TIME did not return expected format"
 # Test PING
 $CLIENT_BIN "PING" | grep -q "PONG" || fail "PING did not return PONG"
 
-echo "✅ All integration tests passed!"
+# Test Very Long Command
+LONG_CMD=$(printf "A%.0s" {1..1000})
+$CLIENT_BIN "SET long=$LONG_CMD" | grep -q "OK" && fail "SET long command did not return OK"
+
+# Test interactive mode
+$CLIENT_BIN <<EOF | grep -q "OK"
+SET interactive=123
+GET interactive
+DEL interactive
+TIME
+PING
+exit
+EOF
+
+
 kill $SERVER_PID
+
+# Test Very Long Command with GET
+$CLIENT_BIN "PING"  2>&1  | grep -q "Connection refused" || fail "Server did not shut down properly"
+
+echo "✅ All integration tests passed!"
