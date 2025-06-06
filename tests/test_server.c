@@ -17,19 +17,15 @@ void test_dispatch_command() {
     ssize_t n = recv(fds[0], buf, sizeof(buf) - 1, 0);
     buf[n] = '\0';
 
-    printf("Respuesta: %s\n", buf);
-
-    if (strstr(buf, "PONG") != NULL) {
-        printf("✅ Test PING PASSED\n");
-    } else {
-        printf("❌ Test PING FAILED\n");
-    }
+    printf("Response: %s\n", buf);
+    assert(strcmp(buf, "PONG\n") == 0);
 
     close(fds[0]);
     close(fds[1]);
 }
 
 int main() {
+    test_dispatch_command();
     printf("✅ All build_command_string tests passed\n");
     return 0;
 }
