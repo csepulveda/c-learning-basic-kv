@@ -57,7 +57,8 @@ EOF
 $CLIENT_BIN "SET test" 2>&1 | grep -q "ERROR" || fail "Bad command did not return ERROR"
 
 # test invalid command
-$CLIENT_BIN $(for i in {1..500}; do echo -n "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA "; done) 2>&1 | grep -q "Failed to construct command" || fail "Invalid command did not return: Failed to construct command"
+LONG_CMD=$(head -c 1000 < /dev/zero | tr '\0' 'A')
+$CLIENT_BIN "$LONG_CMD" 2>&1 | grep -q "Invalid command" || fail "Very long command did not return Invalid command"
 
 
 kill $SERVER_PID
