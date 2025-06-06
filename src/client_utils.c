@@ -22,11 +22,17 @@ int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_siz
         size_t word_len = strnlen(word, buffer_size);
 
         if (i > 1) {
-            if (offset + 1 >= buffer_size) break;
+            if (offset + 1 >= buffer_size) {
+                log_error("Buffer overflow while building command string");
+                return -1;
+            }
             buffer[offset++] = ' ';
         }
 
-        if (offset + word_len >= buffer_size) break;
+        if (offset + word_len >= buffer_size) {
+            log_error("Command string too long: %s", word);
+            return -1;
+        }
 
         memcpy(buffer + offset, word, word_len);
         offset += word_len;
