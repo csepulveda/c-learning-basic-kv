@@ -53,6 +53,9 @@ PING
 exit
 EOF
 
+# test bad command definition
+$CLIENT_BIN "SET test=" 2>&1 | grep -q "ERROR" || fail "Bad command did not return ERROR"
+
 
 kill $SERVER_PID
 
