@@ -33,8 +33,9 @@ $CLIENT_BIN "TIME" | grep -q "20" || fail "TIME did not return expected format"
 $CLIENT_BIN "PING" | grep -q "PONG" || fail "PING did not return PONG"
 
 # Test Very Long Command
-LONG_CMD=$(printf "A%.0s" {1..1000})
-$CLIENT_BIN "SET long=$LONG_CMD" | grep -q "OK" && fail "SET long command did not return OK"
+LONG_CMD=$(head -c 1000 < /dev/zero | tr '\0' 'A')
+output=$($CLIENT_BIN "SET long=$LONG_CMD")
+echo "$output" | grep -q "ERROR" || fail "SET long command did not return ERROR"
 
 # Test interactive mode
 $CLIENT_BIN <<EOF | grep -q "OK"
