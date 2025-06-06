@@ -15,6 +15,17 @@ extern LogLevel CURRENT_LOG_LEVEL;
 
 void log_message_va(LogLevel level, const char *file, int line, const char *fmt, va_list args);
 
+/**
+ * @brief Logs a formatted message at the specified log level if it meets the current threshold.
+ *
+ * Wraps a variadic argument list and forwards it to the core logging function. Messages below the current log level are ignored.
+ *
+ * @param level The severity level of the log message.
+ * @param file The source file name where the log is generated.
+ * @param line The line number in the source file.
+ * @param fmt The format string for the log message.
+ * @param ... Additional arguments for the format string.
+ */
 static inline void log_message_str(LogLevel level, const char *file, int line, const char *fmt, ...) {
 	if (level < CURRENT_LOG_LEVEL) return;
 
