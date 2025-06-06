@@ -11,6 +11,7 @@ sleep 1  # espera a que el servidor arranque
 fail() {
   echo "❌ Test failed: $1"
   kill $SERVER_PID
+  wait $SERVER_PID
   exit 1
 }
 
@@ -62,6 +63,7 @@ $CLIENT_BIN "$LONG_CMD" 2>&1 | grep -q "Invalid command" || fail "Very long comm
 
 
 kill $SERVER_PID
+wait $SERVER_PID
 
 # Test Very Long Command with GET
 $CLIENT_BIN "PING"  2>&1  | grep -q "Connection refused" || fail "Server did not shut down properly"
