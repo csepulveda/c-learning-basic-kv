@@ -18,7 +18,8 @@ void cmd_ping(int clientfd) {
 
 void cmd_time(int clientfd) {
     time_t now = time(NULL);
-    char *timestr = ctime(&now);
+    char timestr[BUFFER_SIZE];
+    ctime_r(&now, timestr);
     send(clientfd, timestr, strlen(timestr), 0);
 }
 

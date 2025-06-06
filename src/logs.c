@@ -27,7 +27,8 @@ void log_message(LogLevel level, const char *file, int line, const char *fmt, ..
 	if (level < CURRENT_LOG_LEVEL) return;
 
 	time_t t = time(NULL);
-	struct tm *lt = localtime(&t);
+	struct tm lt_data;
+	struct tm *lt = localtime_r(&t, &lt_data);
 
 	char timebuf[20];
 	strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", lt);
