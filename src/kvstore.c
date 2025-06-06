@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 #include "kv_store.h"
 
 static kv_pair store[MAX_KV_PAIRS];
@@ -12,12 +13,12 @@ void kv_init() {
 int kv_set(const char *key, const char *value) {
     for (int i = 0; i < MAX_KV_PAIRS; i++) {
         if (strcmp(store[i].key, key) == 0 || store[i].key[0] == '\0') {
-            strncpy(store[i].key, key, MAX_KEY_LEN);
-            strncpy(store[i].value, value, MAX_VAL_LEN);
+            snprintf(store[i].key, MAX_KEY_LEN, "%s", key);
+            snprintf(store[i].value, MAX_VAL_LEN, "%s", value);
             return 0;
         }
     }
-    return -1; // No espacio
+    return -1;
 }
 
 const char* kv_get(const char *key) {
