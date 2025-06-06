@@ -51,7 +51,7 @@ void log_message_va(LogLevel level, const char *file, int line, const char *fmt,
 	strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", &lt_data);
 
 	fprintf(stderr, "%s %s[%s] %s:%d: ", timebuf, level_to_color(level), level_to_string(level), file, line);
-	// NOSONAR: vfprintf usage is safe because fmt is always a static format string.
-	vfprintf(stderr, fmt, args);
+	//vfprintf usage is safe because fmt is always a static format string.
+	vfprintf(stderr, fmt, args); //NOSONAR
 	fprintf(stderr, "\033[0m\n");
 }
