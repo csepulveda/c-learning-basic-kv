@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 #include "protocol.h"
 
 command_t parse_command(const char *message) {
@@ -23,13 +24,10 @@ int extract_key_value(const char *message, char *key, char *value, size_t key_si
 
     if (key_len >= key_size || value_len >= value_size) return -1;
 
+    memcpy(key, space + 1, key_len);
+    key[key_len] = '\0';
 
-    size_t copy_len = key_len < key_size - 1 ? key_len : key_size - 1;
-    strncpy(key, space + 1, copy_len);
-    key[copy_len] = '\0';
-
-    strncpy(value, equal + 1, value_size - 1);
-    value[value_size - 1] = '\0';
+    snprintf(value, value_size, "%s", equal + 1);
 
     char *newline = strchr(value, '\n');
     if (newline) *newline = '\0';
@@ -41,15 +39,12 @@ int extract_key(const char *message, char *key, size_t key_size) {
     const char *space = strchr(message, ' ');
     if (!space) return -1;
 
-    space++;  // skip the space
-    while (*space == ' ') space++; // skip extra spaces
-
+    space++;
+    while (*space == ' ') space++;
     if (*space == '\0') return -1;
 
-    strncpy(key, space, key_size - 1);
-    key[key_size - 1] = '\0';
+    snprintf(key, key_size, "%s", space);
 
-    // Remove newline if any
     char *newline = strchr(key, '\n');
     if (newline) *newline = '\0';
 
