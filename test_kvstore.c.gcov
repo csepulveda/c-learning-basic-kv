@@ -1,0 +1,21 @@
+        -:    0:Source:tests/test_kvstore.c
+        -:    0:Graph:bin/test_kvstore-test_kvstore.gcno
+        -:    0:Data:bin/test_kvstore-test_kvstore.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include <assert.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <string.h>
+        -:    4:#include <stdio.h>
+        -:    5:#include "../src/kv_store.h"
+        -:    6:
+        1:    7:int main() {
+        1:    8:    kv_init();
+        1:    9:    assert(kv_set("key1", "value1") == 0);
+        1:   10:    assert(strcmp(kv_get("key1"), "value1") == 0);
+        1:   11:    assert(kv_delete("key1") == 0);
+        1:   12:    assert(kv_get("key1") == NULL);
+        -:   13:
+        1:   14:    printf("✅ Simple kvstore tests passed\n");
+        1:   15:    return 0;
+        -:   16:}

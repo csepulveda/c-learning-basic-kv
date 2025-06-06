@@ -1,0 +1,104 @@
+        -:    0:Source:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/libkern/arm/_OSByteOrder.h
+        -:    0:Graph:bin/client-client.gcno
+        -:    0:Data:bin/client-client.gcda
+        -:    0:Runs:6
+        -:    0:Programs:1
+        -:    1:/*
+        -:    2: * Copyright (c) 2023 Apple Inc. All rights reserved.
+        -:    3: *
+        -:    4: * @APPLE_OSREFERENCE_LICENSE_HEADER_START@
+        -:    5: *
+        -:    6: * This file contains Original Code and/or Modifications of Original Code
+        -:    7: * as defined in and that are subject to the Apple Public Source License
+        -:    8: * Version 2.0 (the 'License'). You may not use this file except in
+        -:    9: * compliance with the License. The rights granted to you under the License
+        -:   10: * may not be used to create, or enable the creation or redistribution of,
+        -:   11: * unlawful or unlicensed copies of an Apple operating system, or to
+        -:   12: * circumvent, violate, or enable the circumvention or violation of, any
+        -:   13: * terms of an Apple operating system software license agreement.
+        -:   14: *
+        -:   15: * Please obtain a copy of the License at
+        -:   16: * http://www.opensource.apple.com/apsl/ and read it before using this file.
+        -:   17: *
+        -:   18: * The Original Code and all software distributed under the License are
+        -:   19: * distributed on an 'AS IS' basis, WITHOUT WARRANTY OF ANY KIND, EITHER
+        -:   20: * EXPRESS OR IMPLIED, AND APPLE HEREBY DISCLAIMS ALL SUCH WARRANTIES,
+        -:   21: * INCLUDING WITHOUT LIMITATION, ANY WARRANTIES OF MERCHANTABILITY,
+        -:   22: * FITNESS FOR A PARTICULAR PURPOSE, QUIET ENJOYMENT OR NON-INFRINGEMENT.
+        -:   23: * Please see the License for the specific language governing rights and
+        -:   24: * limitations under the License.
+        -:   25: *
+        -:   26: * @APPLE_OSREFERENCE_LICENSE_HEADER_END@
+        -:   27: */
+        -:   28:
+        -:   29:#ifndef _OS__OSBYTEORDERARM_H
+        -:   30:#define _OS__OSBYTEORDERARM_H
+        -:   31:
+        -:   32:#if defined (__arm__) || defined(__arm64__)
+        -:   33:
+        -:   34:#include <sys/_types.h>
+        -:   35:
+        -:   36:#if !defined(__DARWIN_OS_INLINE)
+        -:   37:# if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+        -:   38:#        define __DARWIN_OS_INLINE static inline
+        -:   39:# elif defined(__MWERKS__) || defined(__cplusplus)
+        -:   40:#        define __DARWIN_OS_INLINE static inline
+        -:   41:# else
+        -:   42:#        define __DARWIN_OS_INLINE static __inline__
+        -:   43:# endif
+        -:   44:#endif
+        -:   45:
+        -:   46:/* Generic byte swapping functions. */
+        -:   47:
+        -:   48:__DARWIN_OS_INLINE
+        -:   49:__uint16_t
+        6:   50:_OSSwapInt16(
+        -:   51:	__uint16_t        _data
+        -:   52:	)
+        -:   53:{
+        -:   54:	/* Reduces to 'rev16' with clang */
+        6:   55:	return (__uint16_t)(_data << 8 | _data >> 8);
+        -:   56:}
+        -:   57:
+        -:   58:__DARWIN_OS_INLINE
+        -:   59:__uint32_t
+        -:   60:_OSSwapInt32(
+        -:   61:	__uint32_t        _data
+        -:   62:	)
+        -:   63:{
+        -:   64:#if defined(__llvm__)
+        -:   65:	_data = __builtin_bswap32(_data);
+        -:   66:#else
+        -:   67:	/* This actually generates the best code */
+        -:   68:	_data = (((_data ^ (_data >> 16 | (_data << 16))) & 0xFF00FFFF) >> 8) ^ (_data >> 8 | _data << 24);
+        -:   69:#endif
+        -:   70:
+        -:   71:	return _data;
+        -:   72:}
+        -:   73:
+        -:   74:__DARWIN_OS_INLINE
+        -:   75:__uint64_t
+        -:   76:_OSSwapInt64(
+        -:   77:	__uint64_t        _data
+        -:   78:	)
+        -:   79:{
+        -:   80:#if defined(__llvm__)
+        -:   81:	return __builtin_bswap64(_data);
+        -:   82:#else
+        -:   83:	union {
+        -:   84:		__uint64_t _ull;
+        -:   85:		__uint32_t _ul[2];
+        -:   86:	} _u;
+        -:   87:
+        -:   88:	/* This actually generates the best code */
+        -:   89:	_u._ul[0] = (__uint32_t)(_data >> 32);
+        -:   90:	_u._ul[1] = (__uint32_t)(_data & 0xffffffff);
+        -:   91:	_u._ul[0] = _OSSwapInt32(_u._ul[0]);
+        -:   92:	_u._ul[1] = _OSSwapInt32(_u._ul[1]);
+        -:   93:	return _u._ull;
+        -:   94:#endif
+        -:   95:}
+        -:   96:
+        -:   97:#endif /* defined (__arm__) || defined(__arm64__) */
+        -:   98:
+        -:   99:#endif /* ! _OS__OSBYTEORDERARM_H */

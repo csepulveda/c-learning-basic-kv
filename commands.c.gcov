@@ -1,0 +1,86 @@
+        -:    0:Source:src/commands.c
+        -:    0:Graph:bin/server-commands.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
+        -:    0:Programs:0
+        -:    1:// commands.c
+        -:    2:#include <string.h>
+        -:    3:#include <stdio.h>
+        -:    4:#include <unistd.h>
+        -:    5:#include <sys/socket.h>
+        -:    6:#include <time.h>
+        -:    7:
+        -:    8:#include "commands.h"
+        -:    9:#include "kv_store.h"
+        -:   10:#include "protocol.h"
+        -:   11:
+        -:   12:#define BUFFER_SIZE 1024
+        -:   13:
+    #####:   14:void cmd_ping(int clientfd) {
+    #####:   15:    const char *response = "PONG\n";
+    #####:   16:    send(clientfd, response, strlen(response), 0);
+    #####:   17:}
+        -:   18:
+        -:   19:/**
+        -:   20: * @brief Sends the current server time to the client.
+        -:   21: *
+        -:   22: * Formats the current system time as a human-readable string and transmits it to the connected client.
+        -:   23: */
+    #####:   24:void cmd_time(int clientfd) {
+    #####:   25:    time_t now = time(NULL);
+        -:   26:    char timestr[BUFFER_SIZE];
+    #####:   27:    ctime_r(&now, timestr);
+    #####:   28:    send(clientfd, timestr, strlen(timestr), 0);
+    #####:   29:}
+        -:   30:
+    #####:   31:void cmd_goodbye(int clientfd) {
+    #####:   32:    const char *response = "Goodbye!\n";
+    #####:   33:    send(clientfd, response, strlen(response), 0);
+    #####:   34:    close(clientfd);
+    #####:   35:}
+        -:   36:
+    #####:   37:void cmd_set(int clientfd, const char *buffer) {
+        -:   38:    char key[128], value[128];
+    #####:   39:    if (extract_key_value(buffer, key, value, sizeof(key), sizeof(value)) == 0) {
+    #####:   40:        if (kv_set(key, value) == 0) {
+    #####:   41:            send(clientfd, "OK\n", 3, 0);
+    #####:   42:        } else {
+    #####:   43:            send(clientfd, "ERROR\n", 6, 0);
+        -:   44:        }
+    #####:   45:    } else {
+    #####:   46:        send(clientfd, "ERROR\n", 6, 0);
+        -:   47:    }
+    #####:   48:}
+        -:   49:
+    #####:   50:void cmd_get(int clientfd, const char *buffer) {
+        -:   51:    char key[128];
+    #####:   52:    if (extract_key(buffer, key, sizeof(key)) == 0) {
+    #####:   53:        const char *val = kv_get(key);
+    #####:   54:        if (val) {
+    #####:   55:            send(clientfd, val, strlen(val), 0);
+    #####:   56:            send(clientfd, "\n", 1, 0);
+    #####:   57:        } else {
+    #####:   58:            send(clientfd, "NOT FOUND\n", 10, 0);
+        -:   59:        }
+    #####:   60:    } else {
+    #####:   61:        send(clientfd, "ERROR\n", 6, 0);
+        -:   62:    }
+    #####:   63:}
+        -:   64:
+        -:   65:/**
+        -:   66: * @brief Handles a delete command from the client to remove a key from the key-value store.
+        -:   67: *
+        -:   68: * Parses the key from the input buffer and attempts to delete it from the store. Sends "DELETED" if successful, "NOT FOUND" if the key does not exist, or "ERROR" if the key could not be parsed.
+        -:   69: */
+    #####:   70:void cmd_del(int clientfd, const char *buffer) {
+        -:   71:    char key[128];
+    #####:   72:    if (extract_key(buffer, key, sizeof(key)) == 0) { 
+    #####:   73:        if (kv_delete(key) == 0) {
+    #####:   74:            send(clientfd, "DELETED\n", 8, 0);
+    #####:   75:        } else {
+    #####:   76:            send(clientfd, "NOT FOUND\n", 10, 0);
+        -:   77:        }
+    #####:   78:    } else {
+    #####:   79:        send(clientfd, "ERROR\n", 6, 0);
+        -:   80:    }
+    #####:   81:}

@@ -1,0 +1,110 @@
+        -:    0:Source:src/client.c
+        -:    0:Graph:bin/client-client.gcno
+        -:    0:Data:bin/client-client.gcda
+        -:    0:Runs:6
+        -:    0:Programs:1
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <string.h>
+        -:    4:#include <unistd.h>
+        -:    5:#include <fcntl.h>
+        -:    6:#include <sys/socket.h>
+        -:    7:#include <netinet/in.h>
+        -:    8:#include <arpa/inet.h>
+        -:    9:#include <sys/time.h>
+        -:   10:#include <inttypes.h>
+        -:   11:#include "logs.h"
+        -:   12:
+        -:   13:#include "protocol.h"
+        -:   14:
+        -:   15:#define BUFFER_SIZE 1024
+        -:   16:
+        6:   17:int send_command(int sockfd, const char *command) {
+        -:   18:    struct timeval start, end;
+        6:   19:    gettimeofday(&start, NULL); 
+        -:   20:    
+        6:   21:    int n = send(sockfd, command, strlen(command), 0);
+        -:   22:   
+        6:   23:    gettimeofday(&end, NULL);
+        6:   24:    uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000ULL + (end.tv_usec - start.tv_usec);
+        6:   25:    if (strcmp(command, "PING") == 0) {
+        1:   26:        printf("Ping response time: %" PRIu64 " microseconds\n", delta_us);
+        1:   27:    }
+        -:   28:    
+        6:   29:    return n;
+        -:   30:}
+        -:   31:
+        6:   32:int main(int argc, char *argv[]) {
+        -:   33:    int sockfd, status;
+        -:   34:    struct sockaddr_in addr;
+        -:   35:    char buffer[BUFFER_SIZE];
+        -:   36:
+        6:   37:    const char *server_ip = getenv("HOST") ? getenv("HOST") : "127.0.0.1";
+        6:   38:    int server_port = getenv("PORT") ? atoi(getenv("PORT")) : 8080;
+        -:   39:
+        6:   40:    sockfd = socket(PF_INET, SOCK_STREAM, 0);
+        6:   41:    if (sockfd < 0) {
+    #####:   42:        perror("socket");
+    #####:   43:        return 1;
+        -:   44:    }
+        -:   45:
+        6:   46:    memset(&addr, 0, sizeof(addr));
+        6:   47:    addr.sin_family = PF_INET;
+        6:   48:    addr.sin_port = htons(server_port);
+        6:   49:    inet_aton(server_ip, &addr.sin_addr);
+        -:   50:
+        6:   51:    status = connect(sockfd, (struct sockaddr *) &addr, sizeof(addr));
+        6:   52:    if (status) {
+    #####:   53:        perror("connect");
+    #####:   54:        close(sockfd);
+    #####:   55:        return 1;
+        -:   56:    }
+        -:   57:
+        6:   58:    log_info("Connected to %s:%d\n", server_ip, server_port);
+        -:   59:
+        -:   60:    // Modo argumento por línea de comandos
+        6:   61:    if (argc > 1) {
+        6:   62:        char command[BUFFER_SIZE] = {0};
+       12:   63:        for (int i = 1; i < argc; i++) {
+        6:   64:            strcat(command, argv[i]);
+        6:   65:            if (i < argc - 1) strcat(command, " ");
+        6:   66:        }
+        -:   67:
+        6:   68:        if (parse_command(command) == CMD_UNKNOWN) {
+    #####:   69:            log_error("Invalid command: %s\n", command);
+    #####:   70:            close(sockfd);
+    #####:   71:            return 1;
+        -:   72:        }
+        -:   73:
+        6:   74:        send_command(sockfd, command);
+        6:   75:        memset(buffer, 0, sizeof(buffer));
+        6:   76:        recv(sockfd, buffer, sizeof(buffer), 0);
+        6:   77:        printf("Response: %s", buffer);
+        6:   78:        close(sockfd);
+        6:   79:        return 0;
+        -:   80:    }
+        -:   81:
+        -:   82:    // Modo interactivo
+    #####:   83:    while (1) {
+    #####:   84:        printf("Enter command (or 'exit' to quit): ");
+    #####:   85:        memset(buffer, 0, sizeof(buffer));
+    #####:   86:        fgets(buffer, sizeof(buffer), stdin);
+        -:   87:
+    #####:   88:        if (strncmp(buffer, "exit", 4) == 0)
+    #####:   89:            break;
+        -:   90:
+    #####:   91:        send_command(sockfd, buffer);
+        -:   92:
+    #####:   93:        memset(buffer, 0, sizeof(buffer));
+    #####:   94:        status = recv(sockfd, buffer, sizeof(buffer), 0);
+    #####:   95:        if (status > 0) {
+    #####:   96:            printf("Server: %s", buffer);
+    #####:   97:        } else {
+    #####:   98:            perror("recv");
+    #####:   99:            break;
+        -:  100:        }
+        -:  101:    }
+        -:  102:
+    #####:  103:    close(sockfd);
+    #####:  104:    return 0;
+        6:  105:}

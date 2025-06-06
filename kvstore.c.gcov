@@ -1,0 +1,45 @@
+        -:    0:Source:src/kvstore.c
+        -:    0:Graph:bin/test_kvstore-kvstore.gcno
+        -:    0:Data:bin/test_kvstore-kvstore.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include <string.h>
+        -:    2:#include "kv_store.h"
+        -:    3:
+        -:    4:static kv_pair store[MAX_KV_PAIRS];
+        -:    5:
+        1:    6:void kv_init() {
+      101:    7:    for (int i = 0; i < MAX_KV_PAIRS; i++) {
+      100:    8:        store[i].key[0] = '\0';
+      100:    9:    }
+        1:   10:}
+        -:   11:
+        1:   12:int kv_set(const char *key, const char *value) {
+        1:   13:    for (int i = 0; i < MAX_KV_PAIRS; i++) {
+        1:   14:        if (strcmp(store[i].key, key) == 0 || store[i].key[0] == '\0') {
+        1:   15:            strncpy(store[i].key, key, MAX_KEY_LEN);
+        1:   16:            strncpy(store[i].value, value, MAX_VAL_LEN);
+        1:   17:            return 0;
+        -:   18:        }
+    #####:   19:    }
+    #####:   20:    return -1; // No espacio
+        1:   21:}
+        -:   22:
+        2:   23:const char* kv_get(const char *key) {
+      102:   24:    for (int i = 0; i < MAX_KV_PAIRS; i++) {
+      101:   25:        if (strcmp(store[i].key, key) == 0) {
+        1:   26:            return store[i].value;
+        -:   27:        }
+      100:   28:    }
+        1:   29:    return NULL;
+        2:   30:}
+        -:   31:
+        1:   32:int kv_delete(const char *key) {
+        1:   33:    for (int i = 0; i < MAX_KV_PAIRS; i++) {
+        1:   34:        if (strcmp(store[i].key, key) == 0) {
+        1:   35:            store[i].key[0] = '\0';
+        1:   36:            return 0;
+        -:   37:        }
+    #####:   38:    }
+    #####:   39:    return -1;
+        1:   40:}

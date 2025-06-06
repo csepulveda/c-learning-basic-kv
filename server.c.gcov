@@ -1,0 +1,90 @@
+        -:    0:Source:src/server.c
+        -:    0:Graph:bin/server-server.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
+        -:    0:Programs:0
+        -:    1:// server.c
+        -:    2:#include <stdio.h>
+        -:    3:#include <stdlib.h>
+        -:    4:#include <string.h>
+        -:    5:#include <unistd.h>
+        -:    6:#include <fcntl.h>
+        -:    7:#include <sys/socket.h>
+        -:    8:#include <netinet/in.h>
+        -:    9:#include <pthread.h>
+        -:   10:
+        -:   11:#include "kv_store.h"
+        -:   12:#include "protocol.h"
+        -:   13:#include "commands.h"
+        -:   14:#include "logs.h"
+        -:   15:
+        -:   16:#define SERVER_PORT 8080
+        -:   17:#define BUFFER_SIZE 1024
+        -:   18:
+    #####:   19:void* handle_client(void *arg) {
+    #####:   20:    int clientfd = (int)(intptr_t)arg;
+        -:   21:    char buffer[BUFFER_SIZE];
+        -:   22:
+    #####:   23:    while (1) {
+    #####:   24:        memset(buffer, 0, sizeof(buffer));
+    #####:   25:        ssize_t bytes = recv(clientfd, buffer, sizeof(buffer) - 1, 0);
+    #####:   26:        if (bytes <= 0) break;
+        -:   27:
+    #####:   28:        command_t cmd = parse_command(buffer);
+        -:   29:
+    #####:   30:        switch (cmd) {
+        -:   31:            case CMD_PING:
+    #####:   32:                cmd_ping(clientfd);
+    #####:   33:                break;
+        -:   34:            case CMD_TIME:
+    #####:   35:                cmd_time(clientfd);
+    #####:   36:                break;
+        -:   37:            case CMD_SET:
+    #####:   38:                cmd_set(clientfd, buffer);
+    #####:   39:                break;
+        -:   40:            case CMD_GET:
+    #####:   41:                cmd_get(clientfd, buffer);
+    #####:   42:                break;
+        -:   43:            case CMD_DEL:
+    #####:   44:                cmd_del(clientfd, buffer);
+    #####:   45:                break;
+        -:   46:            case CMD_GOODBYE:
+    #####:   47:                cmd_goodbye(clientfd);
+    #####:   48:                return NULL;
+    #####:   49:            case CMD_UNKNOWN:
+        -:   50:            default:
+    #####:   51:                send(clientfd, "Invalid command\n", 17, 0);
+    #####:   52:                break;
+        -:   53:        }
+        -:   54:    }
+        -:   55:
+    #####:   56:    close(clientfd);
+    #####:   57:    return NULL;
+    #####:   58:}
+        -:   59:
+    #####:   60:int main() {
+    #####:   61:    kv_init();
+        -:   62:
+    #####:   63:    int serverfd = socket(AF_INET, SOCK_STREAM, 0);
+    #####:   64:    struct sockaddr_in addr = {
+        -:   65:        .sin_family = AF_INET,
+        -:   66:        .sin_port = htons(SERVER_PORT),
+        -:   67:        .sin_addr.s_addr = INADDR_ANY
+        -:   68:    };
+        -:   69:
+    #####:   70:    bind(serverfd, (struct sockaddr*)&addr, sizeof(addr));
+    #####:   71:    listen(serverfd, 5);
+        -:   72:
+        -:   73:    
+    #####:   74:    log_info("Server listening on port %d...\n", SERVER_PORT);
+        -:   75:
+    #####:   76:    while (1) {
+    #####:   77:        int clientfd = accept(serverfd, NULL, NULL);
+        -:   78:        pthread_t tid;
+    #####:   79:        pthread_create(&tid, NULL, handle_client, (void *)(intptr_t)clientfd);
+    #####:   80:        pthread_detach(tid);
+        -:   81:    }
+        -:   82:
+        -:   83:    close(serverfd);
+        -:   84:    return 0;
+        -:   85:}

@@ -1,0 +1,101 @@
+        -:    0:Source:tests/test_logs.c
+        -:    0:Graph:bin/test_logs-test_logs.gcno
+        -:    0:Data:bin/test_logs-test_logs.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include <assert.h>
+        -:    2:#include <stdio.h>
+        -:    3:#include <stdlib.h>
+        -:    4:#include <string.h>
+        -:    5:#include <unistd.h>
+        -:    6:
+        -:    7:#include "../src/logs.h"
+        -:    8:
+        4:    9:char *capture_stderr_output(void (*log_fn)(void)) {
+        -:   10:    int pipefd[2];
+        4:   11:    pipe(pipefd);
+        -:   12:
+        4:   13:    int saved_stderr = dup(STDERR_FILENO);
+        4:   14:    dup2(pipefd[1], STDERR_FILENO);
+        4:   15:    close(pipefd[1]);
+        -:   16:
+        4:   17:    log_fn();
+        -:   18:
+        4:   19:    fflush(stderr);
+        4:   20:    dup2(saved_stderr, STDERR_FILENO);
+        4:   21:    close(saved_stderr);
+        -:   22:
+        4:   23:    char *buffer = calloc(1, 4096);
+        4:   24:    read(pipefd[0], buffer, 4095);
+        4:   25:    close(pipefd[0]);
+        -:   26:
+        4:   27:    return buffer;
+        -:   28:}
+        -:   29:
+        1:   30:void log_fn_debug() {
+        1:   31:    log_message_str(LOG_LEVEL_DEBUG, "test_logs.c", 10, "Debug test");
+        1:   32:}
+        -:   33:
+        1:   34:void log_fn_info() {
+        1:   35:    log_message_str(LOG_LEVEL_INFO, "test_logs.c", 20, "Info test");
+        1:   36:}
+        -:   37:
+        1:   38:void log_fn_error() {
+        1:   39:    log_message_str(LOG_LEVEL_ERROR, "test_logs.c", 30, "Error test");
+        1:   40:}
+        -:   41:
+        -:   42:// 🧪 Tests
+        1:   43:void test_debug_log() {
+        1:   44:    CURRENT_LOG_LEVEL = LOG_LEVEL_DEBUG;
+        1:   45:    char *output = capture_stderr_output(log_fn_debug);
+        1:   46:    assert(strstr(output, "DEBUG"));
+        1:   47:    assert(strstr(output, "Debug test"));
+        1:   48:    free(output);
+        1:   49:}
+        -:   50:
+        1:   51:void test_info_log() {
+        1:   52:    CURRENT_LOG_LEVEL = LOG_LEVEL_DEBUG;
+        1:   53:    char *output = capture_stderr_output(log_fn_info);
+        1:   54:    assert(strstr(output, "INFO"));
+        1:   55:    assert(strstr(output, "Info test"));
+        1:   56:    free(output);
+        1:   57:}
+        -:   58:
+        1:   59:void test_error_log() {
+        1:   60:    CURRENT_LOG_LEVEL = LOG_LEVEL_DEBUG;
+        1:   61:    char *output = capture_stderr_output(log_fn_error);
+        1:   62:    assert(strstr(output, "ERROR"));
+        1:   63:    assert(strstr(output, "Error test"));
+        1:   64:    free(output);
+        1:   65:}
+        -:   66:
+        1:   67:void test_va_wrapper(const char *fmt, ...) {
+        -:   68:    va_list args;
+        1:   69:    va_start(args, fmt);
+        1:   70:    log_message_va(LOG_LEVEL_INFO, "va_test.c", 77, fmt, args);
+        1:   71:    va_end(args);
+        1:   72:}
+        -:   73:
+        1:   74:void log_fn_va() {
+        1:   75:    test_va_wrapper("VA log: %s = %d", "value", 42);
+        1:   76:}
+        -:   77:
+        1:   78:void test_va_log() {
+        1:   79:    CURRENT_LOG_LEVEL = LOG_LEVEL_DEBUG;
+        -:   80:
+        1:   81:    char *output = capture_stderr_output(log_fn_va);
+        1:   82:    assert(strstr(output, "INFO"));
+        1:   83:    assert(strstr(output, "va_test.c"));
+        1:   84:    assert(strstr(output, "VA log: value = 42"));
+        1:   85:    free(output);
+        1:   86:}
+        -:   87:
+        1:   88:int main() {
+        1:   89:    test_va_log();
+        1:   90:    test_debug_log();
+        1:   91:    test_info_log();
+        1:   92:    test_error_log();
+        -:   93:
+        1:   94:    printf("✅ Simple log level tests passed\n");
+        1:   95:    return 0;
+        -:   96:}
