@@ -9,7 +9,7 @@
 #include <sys/time.h>
 #include <inttypes.h>
 #include "logs.h"
-
+#include "client_utils.h"
 #include "protocol.h"
 
 #define BUFFER_SIZE 1024
@@ -65,30 +65,19 @@ int main(int argc, char *argv[]) {
     // Modo argumento por línea de comandos
     if (argc > 1) {
         char command[BUFFER_SIZE] = {0};
-        size_t offset = 0;
-    
-        for (int i = 1; i < argc && offset < BUFFER_SIZE - 1; i++) {
-            size_t arg_len = strnlen(argv[i], BUFFER_SIZE - offset - 1);
-        
-            if (offset + arg_len >= BUFFER_SIZE - 1)
-                break;
-        
-            memcpy(command + offset, argv[i], arg_len);
-            offset += arg_len;
-        
-            if (i < argc - 1 && offset < BUFFER_SIZE - 2) {
-                command[offset++] = ' ';
-            }
+
+        if (build_command_string(argc, argv, command, sizeof(command)) != 0) {
+            log_error("Failed to construct command\n");
+            close(sockfd);
+            return 1;
         }
-    
-        command[offset] = '\0';
-    
+
         if (parse_command(command) == CMD_UNKNOWN) {
             log_error("Invalid command: %s\n", command);
             close(sockfd);
             return 1;
         }
-    
+
         send_command(sockfd, command);
         memset(buffer, 0, sizeof(buffer));
         recv(sockfd, buffer, sizeof(buffer), 0);
