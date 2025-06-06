@@ -37,6 +37,12 @@ LONG_CMD=$(head -c 1000 < /dev/zero | tr '\0' 'A')
 output=$($CLIENT_BIN "SET long=$LONG_CMD")
 echo "$output" | grep -q "ERROR" || fail "SET long command did not return ERROR"
 
+# Test error on invalid command
+$CLIENT_BIN "INVALID COMMAND" 2>&1 | grep -q "ERROR" || fail "Invalid command did not return ERROR"
+
+# test defining host and port
+HOST=127.0.0.1 PORT=8080 $CLIENT_BIN "SET test=123"|grep -q "OK" || fail "SET did not return OK"
+
 # Test interactive mode
 $CLIENT_BIN <<EOF | grep -q "OK"
 SET interactive=123
