@@ -31,6 +31,14 @@ const char* kv_get(const char *key) {
     return NULL;
 }
 
+/**
+ * @brief Removes a key-value pair from the store by key.
+ *
+ * Searches for the specified key and deletes the entry if found.
+ *
+ * @param key The key to remove from the store.
+ * @return 0 if the key was found and deleted; -1 if the key does not exist.
+ */
 int kv_delete(const char *key) {
     for (int i = 0; i < MAX_KV_PAIRS; i++) {
         if (strcmp(store[i].key, key) == 0) {

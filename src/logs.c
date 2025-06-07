@@ -4,6 +4,15 @@
 
 LogLevel CURRENT_LOG_LEVEL = LOG_LEVEL_DEBUG;
 
+/**
+ * @brief Returns the string representation of a log level.
+ *
+ * Converts a LogLevel enum value to its corresponding string ("DEBUG", "INFO", "ERROR").
+ * Returns "UNKNOWN" if the level is unrecognized.
+ *
+ * @param level The log level to convert.
+ * @return const char* The string representation of the log level.
+ */
 const char *level_to_string(LogLevel level) {
 	switch (level) {
 		case LOG_LEVEL_DEBUG: return "DEBUG";
@@ -41,6 +50,18 @@ void log_message_str(LogLevel level, const char *file, int line, const char *mes
 	        message);
 }
 
+/**
+ * @brief Logs a formatted message with level, timestamp, color, and source location.
+ *
+ * Outputs a log message to stderr if the specified log level meets or exceeds the current threshold.
+ * The message includes a timestamp, colored log level, source file name, line number, and the formatted message.
+ *
+ * @param level The severity level of the log message.
+ * @param file The source file name where the log is generated.
+ * @param line The line number in the source file.
+ * @param fmt The format string for the log message.
+ * @param args The variable argument list for formatting the message.
+ */
 void log_message_va(LogLevel level, const char *file, int line, const char *fmt, va_list args) {
 	if (level < CURRENT_LOG_LEVEL) return;
 

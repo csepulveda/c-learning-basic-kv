@@ -8,6 +8,18 @@
 #include "client_utils.h"
 #include "logs.h"
 
+/**
+ * @brief Constructs a command string from command-line arguments.
+ *
+ * Joins command-line arguments from argv[1] to argv[argc-1] into a single space-separated string,
+ * storing the result in the provided buffer. Ensures the buffer is not overflowed and is properly null-terminated.
+ *
+ * @param argc Number of command-line arguments.
+ * @param argv Array of argument strings.
+ * @param buffer Destination buffer for the constructed command string.
+ * @param buffer_size Size of the destination buffer in bytes.
+ * @return 0 on success, or -1 if the buffer is invalid or too small.
+ */
 int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_size) {
     if (!buffer || buffer_size == 0) return -1;
 
@@ -38,6 +50,15 @@ int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_siz
     return 0;
 }
 
+/**
+ * @brief Sends a command string over a socket and measures transmission time.
+ *
+ * Sends the specified command over the given socket file descriptor. If the command is "PING", prints the round-trip time in microseconds. Returns the number of bytes sent, or -1 if the command is too long.
+ *
+ * @param sockfd Socket file descriptor to send the command through.
+ * @param command Null-terminated command string to send.
+ * @return int Number of bytes sent, or -1 on error.
+ */
 int send_command(int sockfd, const char *command) {
     struct timeval start;
     struct timeval end;

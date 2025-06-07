@@ -14,6 +14,13 @@
 #include "logs.h"
 #include "client_utils.h"
 
+/**
+ * @brief Entry point for the TCP client application.
+ *
+ * Connects to a server using IP and port from environment variables or defaults, then sends commands either from command-line arguments or interactively. Prints server responses and handles connection errors gracefully.
+ *
+ * @return 0 on success, 1 on failure.
+ */
 int main(int argc, char *argv[]) {
     int sockfd, status;
     ssize_t status_r;
