@@ -50,18 +50,18 @@ int main(int argc, char *argv[]) {
 
     log_info("Connected to %s:%d\n", server_ip, server_port);
 
-    // Modo argumento por línea de comandos
+    // Line command mode
     if (argc > 1) {
-        char command[BUFFER_SIZE] = {0};
-
-        if (build_command_string(argc, argv, command, sizeof(command)) != 0) {
-            log_error("Failed to construct command\n");
+        command_t cmd = parse_command(argv[1]);
+        if (cmd == CMD_UNKNOWN) {
+            log_error("Invalid command: %s\n", argv[1]);
             close(sockfd);
             return 1;
         }
 
-        if (parse_command(command) == CMD_UNKNOWN) {
-            log_error("Invalid command: %s\n", command);
+        char command[BUFFER_SIZE] = {0};
+        if (build_command_string(argc, argv, command, sizeof(command)) != 0) {
+            log_error("Failed to construct command\n");
             close(sockfd);
             return 1;
         }
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    // Modo interactivo
+    // Interactive mode
     bool running = true;
 
     while (running) {
