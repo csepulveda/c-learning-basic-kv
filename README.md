@@ -58,8 +58,6 @@ make test
 ```
 
 ## Notes
-
-- This is a learning project — the server is single-threaded and does not support multiple clients concurrently.
 - All data is kept in memory and is not persistent.
 
 ## License

@@ -61,6 +61,13 @@ $CLIENT_BIN "SET test" 2>&1 | grep -q "ERROR" || fail "Bad command did not retur
 LONG_CMD=$(head -c 1000 < /dev/zero | tr '\0' 'A')
 $CLIENT_BIN "$LONG_CMD" 2>&1 | grep -q "Invalid command" || fail "Very long command did not return Invalid command"
 
+# Test concurrent clients
+echo "Testing concurrent clients..."
+
+seq 1 10 | parallel -j10 --bar "$CLIENT_BIN \"SET concurrent{}=value{}\""
+
+# Validate results
+seq 1 10 | parallel -j10 --bar "$CLIENT_BIN \"GET concurrent{}\" | grep -q \"value{}\" || fail \"Concurrent GET concurrent{} failed\""
 
 kill $SERVER_PID
 wait $SERVER_PID
