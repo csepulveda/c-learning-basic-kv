@@ -72,7 +72,6 @@ test: $(TEST_KV_BIN) $(TEST_PROTOCOL_BIN) $(TEST_LOGS_BIN) $(TEST_CLIENT_BIN) $(
 	@echo "Running server tests..."
 	@$(TEST_SERVER_BIN)
 
-
 integration-test:
 	@echo "Running integration tests..."
 	@tests/integration_test.sh
@@ -80,9 +79,16 @@ integration-test:
 clean:
 	rm -rf $(BIN_DIR) *.gcda *.gcno *.info *.gcov coverage.xml
 
-# Recompilación para cobertura
 coverage-build:
 	$(MAKE) clean
 	$(MAKE) all CFLAGS="$(CFLAGS_TEST)" LDFLAGS="$(LDFLAGS_TEST)"
+
+local-coverage: coverage-build
+	@echo "Running tests with coverage..."
+	@$(MAKE) test
+	@$(MAKE) integration-test
+	@echo "Generating coverage report..."
+	@gcovr $(BIN_DIR)/*.gcda
+	@$(MAKE) clean
 
 .PHONY: all test integration-test clean coverage-build
