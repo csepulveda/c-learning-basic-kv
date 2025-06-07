@@ -11,9 +11,33 @@
 #define BUFFER_SIZE 1024
 #define MAX_VAL_SIZE 1024
 
-void cmd_ping(int clientfd) {
-    const char *response = "PONG\n";
-    send(clientfd, response, strlen(response), 0); //NOSONAR
+static void cmd_ping(int clientfd, const char *message);
+static void cmd_time(int clientfd, const char *message);
+static void cmd_goodbye(int clientfd, const char *message);
+static void cmd_set(int clientfd, const char *message);
+static void cmd_get(int clientfd, const char *message);
+static void cmd_del(int clientfd, const char *message);
+
+static command_entry_t command_table[] = {
+    { CMD_PING,    cmd_ping },
+    { CMD_TIME,    cmd_time },
+    { CMD_GOODBYE, cmd_goodbye },
+    { CMD_SET,     cmd_set },
+    { CMD_GET,     cmd_get },
+    { CMD_DEL,     cmd_del },
+    { CMD_UNKNOWN, NULL }  // Sentinel
+};
+
+
+void handle_command(int clientfd, command_t cmd, const char *message) {
+    for (int i = 0; command_table[i].proc != NULL; i++) {
+        if (command_table[i].cmd == cmd) {
+            command_table[i].proc(clientfd, message);
+            return;
+        }
+    }
+
+    dprintf(clientfd, "ERR unknown command\n");
 }
 
 /**
@@ -21,14 +45,22 @@ void cmd_ping(int clientfd) {
  *
  * Formats the current system time as a human-readable string and transmits it to the connected client.
  */
-void cmd_time(int clientfd) {
+static void cmd_ping(int clientfd, const char *message) {
+    (void)message;
+    const char *response = "PONG\n";
+    send(clientfd, response, strlen(response), 0);
+}
+
+void cmd_time(int clientfd, const char *message) {
+    (void)message;
     time_t now = time(NULL);
     char timestr[BUFFER_SIZE];
     ctime_r(&now, timestr);
     send(clientfd, timestr, sizeof(timestr) -1 , 0);
 }
 
-void cmd_goodbye(int clientfd) {
+void cmd_goodbye(int clientfd, const char *message) {
+    (void)message;
     const char *response = "Goodbye!\n";
     send(clientfd, response, strlen(response), 0); //NOSONAR
     close(clientfd);

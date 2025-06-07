@@ -20,22 +20,22 @@ void dispatch_command(int clientfd, const char *buffer) {
 
     switch (cmd) {
         case CMD_PING:
-            cmd_ping(clientfd);
+            handle_command(clientfd, CMD_PING, "");
             break;
         case CMD_TIME:
-            cmd_time(clientfd);
+            handle_command(clientfd, CMD_TIME, "");
             break;
         case CMD_SET:
-            cmd_set(clientfd, buffer);
+            handle_command(clientfd, CMD_SET, buffer);
             break;
         case CMD_GET:
-            cmd_get(clientfd, buffer);
+            handle_command(clientfd, CMD_GET, buffer);
             break;
         case CMD_DEL:
-            cmd_del(clientfd, buffer);
+            handle_command(clientfd, CMD_DEL, buffer);
             break;
         case CMD_GOODBYE:
-            cmd_goodbye(clientfd);
+            handle_command(clientfd, CMD_GOODBYE, "");
             break;
         case CMD_UNKNOWN:
         default:
