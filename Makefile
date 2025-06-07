@@ -85,7 +85,6 @@ coverage-build:
 
 local-coverage: coverage-build
 	@echo "Running tests with coverage..."
-	@$(MAKE) coverage-build
 	@$(MAKE) test
 	@$(MAKE) integration-test
 	@echo "Generating coverage report..."
