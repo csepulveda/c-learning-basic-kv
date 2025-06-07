@@ -1,14 +1,26 @@
 #include <string.h>
 #include <stdio.h>
+
 #include "protocol.h"
 
+/**
+ * @brief Determines the command type from a protocol message string.
+ *
+ * Analyzes the beginning of the input message to identify if it matches a known command
+ * ("SET", "GET", "DEL", "PING", "TIME", or "GOODBYE") followed by a valid delimiter.
+ *
+ * @param message The input message string to parse.
+ * @return command_t The corresponding command type, or CMD_UNKNOWN if no match is found.
+ */
 command_t parse_command(const char *message) {
-    if (strncmp(message, "PING", 4) == 0) return CMD_PING;
-    if (strncmp(message, "TIME", 4) == 0) return CMD_TIME;
-    if (strncmp(message, "GOODBYE", 7) == 0) return CMD_GOODBYE;
-    if (strncmp(message, "SET ", 4) == 0) return CMD_SET;
-    if (strncmp(message, "GET ", 4) == 0) return CMD_GET;
-    if (strncmp(message, "DEL ", 4) == 0) return CMD_DEL;
+    if (strncmp(message, "SET", 3) == 0 && (message[3] == ' ' )) return CMD_SET;
+    if (strncmp(message, "GET", 3) == 0 && (message[3] == ' ' )) return CMD_GET;
+    if (strncmp(message, "DEL", 3) == 0 && (message[3] == ' ' )) return CMD_DEL;
+    
+    if (strncmp(message, "PING", 4) == 0 && (message[4] == ' ' || message[4] == '\0' || message[4] == '\n')) return CMD_PING;
+    if (strncmp(message, "TIME", 4) == 0 && (message[4] == ' ' || message[4] == '\0' || message[4] == '\n')) return CMD_TIME;
+    
+    if (strncmp(message, "GOODBYE", 7) == 0 && (message[7] == ' ' || message[7] == '\0' || message[7] == '\n')) return CMD_GOODBYE;
     return CMD_UNKNOWN;
 }
 

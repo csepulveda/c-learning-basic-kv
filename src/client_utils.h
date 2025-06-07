@@ -3,7 +3,9 @@
 
 #include <stddef.h>
 
-int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_size);
+#define BUFFER_SIZE 1024
+
 int send_command(int sockfd, const char *command);
+int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_size);
 
 #endif

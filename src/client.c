@@ -1,21 +1,26 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <sys/time.h>
+#include <sys/socket.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <netinet/in.h>
 #include <inttypes.h>
+#include <fcntl.h>
+#include <arpa/inet.h>
+#include "protocol.h"
+
 #include "logs.h"
 #include "client_utils.h"
-#include "protocol.h"
-#include <stdbool.h>
 
-#define BUFFER_SIZE 1024
-
-
+/**
+ * @brief Entry point for the TCP client application.
+ *
+ * Connects to a server using IP and port from environment variables or defaults, then sends commands either from command-line arguments or interactively. Prints server responses and handles connection errors gracefully.
+ *
+ * @return 0 on success, 1 on failure.
+ */
 int main(int argc, char *argv[]) {
     int sockfd, status;
     ssize_t status_r;

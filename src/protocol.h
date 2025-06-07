@@ -1,6 +1,7 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
-#define BUFFER_SIZE 1024
+
+#include <stddef.h>
 
 typedef enum {
     CMD_PING,
