@@ -3,6 +3,13 @@
 #include <stdio.h>
 #include "../src/protocol.h"
 
+/**
+ * @brief Runs tests to validate the protocol command parsing and extraction functions.
+ *
+ * Executes assertions to verify correct behavior of `parse_command`, `extract_key_value`, and `extract_key` for various command inputs. Prints a confirmation message if all tests pass.
+ *
+ * @return int Returns 0 upon successful completion of all tests.
+ */
 int main() {
     assert(parse_command("SET key=value") == CMD_SET);
     assert(parse_command("PING") == CMD_PING);

@@ -7,6 +7,14 @@
 #include "protocol.h"
 #include "server_utils.h"
 
+/**
+ * @brief Parses and dispatches a client command to the appropriate handler.
+ *
+ * Determines the command type from the input buffer and invokes the corresponding handler function for the client socket. Sends an "Invalid command" message if the command is unrecognized.
+ *
+ * @param clientfd File descriptor for the client socket.
+ * @param buffer Null-terminated string containing the client's command.
+ */
 void dispatch_command(int clientfd, const char *buffer) {
     command_t cmd = parse_command(buffer);
 
@@ -36,6 +44,15 @@ void dispatch_command(int clientfd, const char *buffer) {
     }
 }
 
+/**
+ * @brief Handles communication with a connected client over a socket.
+ *
+ * Continuously receives commands from the client, dispatches each command for processing,
+ * and closes the connection when the client disconnects or an error occurs.
+ *
+ * @param arg Pointer to the client socket file descriptor (cast from void*).
+ * @return Always returns NULL upon client disconnection or error.
+ */
 void* handle_client(void *arg) {
     int clientfd = (int)(intptr_t)arg;
     char buffer[BUFFER_SIZE];

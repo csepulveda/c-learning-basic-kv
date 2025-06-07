@@ -16,6 +16,13 @@
 volatile sig_atomic_t running = 1;
 int serverfd;
 
+/**
+ * @brief Handles SIGTERM to gracefully shut down the server.
+ *
+ * Sets the running flag to 0, logs the shutdown event, and closes the server socket.
+ *
+ * @param sig The signal number received (expected to be SIGTERM).
+ */
 void handle_sigterm(int sig) {
     running = 0;
     log_info("Shuting Down Server by signal: %d", sig);
@@ -23,6 +30,13 @@ void handle_sigterm(int sig) {
 }
 
 
+/**
+ * @brief Entry point for the multi-threaded TCP server.
+ *
+ * Initializes the key-value store, sets up the server socket, and listens for incoming client connections on a configurable port. Handles each client connection in a separate detached thread. Supports graceful shutdown on SIGTERM.
+ *
+ * @return int Returns 0 on normal termination, or 1 if socket binding or listening fails.
+ */
 int main() {
     kv_init();
     int status;

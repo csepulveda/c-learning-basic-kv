@@ -3,6 +3,15 @@
 
 #include "protocol.h"
 
+/**
+ * @brief Determines the command type from a protocol message string.
+ *
+ * Analyzes the beginning of the input message to identify if it matches a known command
+ * ("SET", "GET", "DEL", "PING", "TIME", or "GOODBYE") followed by a valid delimiter.
+ *
+ * @param message The input message string to parse.
+ * @return command_t The corresponding command type, or CMD_UNKNOWN if no match is found.
+ */
 command_t parse_command(const char *message) {
     if (strncmp(message, "SET", 3) == 0 && (message[3] == ' ' )) return CMD_SET;
     if (strncmp(message, "GET", 3) == 0 && (message[3] == ' ' )) return CMD_GET;

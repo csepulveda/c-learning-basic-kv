@@ -7,6 +7,14 @@
 
 #include "../src/server_utils.h"
 
+/**
+ * @brief Tests the dispatch_command function by sending a command and verifying the response.
+ *
+ * Sends the specified command string to dispatch_command using a socket pair, receives the response, and asserts that it matches the expected response.
+ *
+ * @param cmd The command string to send.
+ * @param resp The expected response string to verify.
+ */
 void test_dispatch_command(const char *cmd, const char *resp) {
     int fds[2];
     socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
@@ -25,6 +33,14 @@ void test_dispatch_command(const char *cmd, const char *resp) {
 }
 
 
+/**
+ * @brief Tests the handle_client function by sending a command and verifying the response.
+ *
+ * Creates a socket pair, sends the specified command to handle_client running in a separate thread, receives the response, and asserts that it matches the expected response.
+ *
+ * @param cmd The command string to send to the client handler.
+ * @param expected_resp The expected response string to verify against the actual output.
+ */
 void test_handle_client(const char *cmd, const char *expected_resp) {
     int fds[2];
     socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
@@ -55,6 +71,13 @@ void test_handle_client(const char *cmd, const char *expected_resp) {
 }
 
 
+/**
+ * @brief Runs all server command and client handler tests.
+ *
+ * Executes a series of tests for command dispatching and client handling, verifying that server responses match expected outputs for various commands. Prints a success message if all tests pass.
+ *
+ * @return int Returns 0 on successful completion of all tests.
+ */
 int main() {
     test_dispatch_command("PING\n", "PONG\n");
     test_dispatch_command("SET test=test1\n", "OK\n");
