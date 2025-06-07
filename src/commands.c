@@ -51,7 +51,7 @@ static void cmd_ping(int clientfd, const char *message) {
     send(clientfd, response, strlen(response), 0); //NOSONAR
 }
 
-void cmd_time(int clientfd, const char *message) {
+static void cmd_time(int clientfd, const char *message) {
     (void)message;
     time_t now = time(NULL);
     char timestr[BUFFER_SIZE];
@@ -59,7 +59,7 @@ void cmd_time(int clientfd, const char *message) {
     send(clientfd, timestr, sizeof(timestr) -1 , 0);
 }
 
-void cmd_goodbye(int clientfd, const char *message) {
+static void cmd_goodbye(int clientfd, const char *message) {
     (void)message;
     const char *response = "Goodbye!\n";
     send(clientfd, response, strlen(response), 0); //NOSONAR
@@ -79,7 +79,7 @@ void cmd_set(int clientfd, const char *buffer) {
     }
 }
 
-void cmd_get(int clientfd, const char *buffer) {
+static void cmd_get(int clientfd, const char *buffer) {
     char key[128];
     if (extract_key(buffer, key, sizeof(key)) == 0) {
         const char *val = kv_get(key);
@@ -100,7 +100,7 @@ void cmd_get(int clientfd, const char *buffer) {
  *
  * Parses the key from the input buffer and attempts to delete it from the store. Sends "DELETED" if successful, "NOT FOUND" if the key does not exist, or "ERROR" if the key could not be parsed.
  */
-void cmd_del(int clientfd, const char *buffer) {
+static void cmd_del(int clientfd, const char *buffer) {
     char key[128];
     if (extract_key(buffer, key, sizeof(key)) == 0) { 
         if (kv_delete(key) == 0) {
