@@ -66,7 +66,7 @@ static void cmd_goodbye(int clientfd, const char *message) {
     close(clientfd);
 }
 
-void cmd_set(int clientfd, const char *buffer) {
+static void cmd_set(int clientfd, const char *buffer) {
     char key[128], value[128];
     if (extract_key_value(buffer, key, value, sizeof(key), sizeof(value)) == 0) {
         if (kv_set(key, value) == 0) {
