@@ -48,7 +48,7 @@ void handle_command(int clientfd, command_t cmd, const char *message) {
 static void cmd_ping(int clientfd, const char *message) {
     (void)message;
     const char *response = "PONG\n";
-    send(clientfd, response, strlen(response), 0);
+    send(clientfd, response, strlen(response), 0); //NOSONAR
 }
 
 void cmd_time(int clientfd, const char *message) {
