@@ -11,15 +11,6 @@
 
 #define BUFFER_SIZE 1024
 
-
-
-static void cmd_ping(int clientfd, const char *message);
-static void cmd_time(int clientfd, const char *message);
-static void cmd_goodbye(int clientfd, const char *message);
-static void cmd_set(int clientfd, const char *message);
-static void cmd_get(int clientfd, const char *message);
-static void cmd_del(int clientfd, const char *message);
-
 static command_entry_t command_table[] = {
     { CMD_PING,    cmd_ping },
     { CMD_TIME,    cmd_time },
@@ -38,8 +29,6 @@ void handle_command(int clientfd, command_t cmd, const char *message) {
             return;
         }
     }
-
-    dprintf(clientfd, "ERR unknown command\n");
 }
 
 /**
@@ -47,13 +36,13 @@ void handle_command(int clientfd, command_t cmd, const char *message) {
  *
  * Formats the current system time as a human-readable string and transmits it to the connected client.
  */
-static void cmd_ping(int clientfd, const char *message) {
+ void cmd_ping(int clientfd, const char *message) {
     (void)message;
     const char *response = "PONG\n";
     send(clientfd, response, strlen(response), 0); //NOSONAR
 }
 
-static void cmd_time(int clientfd, const char *message) {
+ void cmd_time(int clientfd, const char *message) {
     (void)message;
     time_t now = time(NULL);
     char timestr[BUFFER_SIZE];
@@ -61,14 +50,14 @@ static void cmd_time(int clientfd, const char *message) {
     send(clientfd, timestr, sizeof(timestr) -1 , 0);
 }
 
-static void cmd_goodbye(int clientfd, const char *message) {
+ void cmd_goodbye(int clientfd, const char *message) {
     (void)message;
     const char *response = "Goodbye!\n";
     send(clientfd, response, strlen(response), 0); //NOSONAR
     close(clientfd);
 }
 
-static void cmd_set(int clientfd, const char *buffer) {
+ void cmd_set(int clientfd, const char *buffer) {
     char key[MAX_KEY_LEN];
     char value[MAX_VAL_LEN];
 
@@ -95,7 +84,7 @@ static void cmd_set(int clientfd, const char *buffer) {
     }
 }
 
-static void cmd_get(int clientfd, const char *buffer) {
+ void cmd_get(int clientfd, const char *buffer) {
     char key[MAX_KEY_LEN];
     if (extract_key(buffer, key, sizeof(key)) == 0) {
         const char *val = kv_get(key);
@@ -116,7 +105,7 @@ static void cmd_get(int clientfd, const char *buffer) {
  *
  * Parses the key from the input buffer and attempts to delete it from the store. Sends "DELETED" if successful, "NOT FOUND" if the key does not exist, or "ERROR" if the key could not be parsed.
  */
-static void cmd_del(int clientfd, const char *buffer) {
+ void cmd_del(int clientfd, const char *buffer) {
     char key[MAX_KEY_LEN];
     if (extract_key(buffer, key, sizeof(key)) == 0) { 
         if (kv_delete(key) == 0) {

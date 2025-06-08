@@ -11,5 +11,12 @@ typedef struct {
 } command_entry_t;
 
 void handle_command(int clientfd, command_t cmd, const char *message);
+void cmd_set(int clientfd, const char *buffer);
+void cmd_get(int clientfd, const char *buffer);
+void cmd_del(int clientfd, const char *buffer);
+void cmd_ping(int clientfd, const char *message);
+void cmd_time(int clientfd, const char *message);
+void cmd_goodbye(int clientfd, const char *message);
+
 
 #endif

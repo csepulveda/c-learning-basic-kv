@@ -15,6 +15,9 @@ int main() {
     assert(parse_command("PING") == CMD_PING);
     assert(parse_command("PING ") == CMD_PING);
     assert(parse_command("PING\n") == CMD_PING);
+    assert(parse_command("SET ") == CMD_SET);
+    assert(parse_command("GET ") == CMD_GET);
+    assert(parse_command("DEL ") == CMD_DEL);
 
     assert(parse_command("GOODBYE") == CMD_GOODBYE);
     assert(parse_command("GOODBYE ") == CMD_GOODBYE);
