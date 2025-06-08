@@ -13,6 +13,7 @@
 
 #include "logs.h"
 #include "client_utils.h"
+#include "errors.h"
 
 /**
  * @brief Entry point for the TCP client application.
@@ -52,14 +53,22 @@ int main(int argc, char *argv[]) {
 
     // Line command mode
     if (argc > 1) {
-        command_t cmd = parse_command(argv[1]);
+
+        char command[BUFFER_SIZE] = {0};
+        if (build_command_string(argc, argv, command, sizeof(command)) != 0) {
+            log_error("Failed to construct command\n");
+            close(sockfd);
+            return 1;
+        }
+        command_t cmd = parse_command(command);
         if (cmd == CMD_UNKNOWN) {
-            log_error("Invalid command: %s\n", argv[1]);
+            char command_name[BUFFER_SIZE];
+            sscanf(command, "%s", command_name);
+            log_error("Invalid command: %s\n", command_name);
             close(sockfd);
             return 1;
         }
 
-        char command[BUFFER_SIZE] = {0};
         if (build_command_string(argc, argv, command, sizeof(command)) != 0) {
             log_error("Failed to construct command\n");
             close(sockfd);
@@ -96,6 +105,7 @@ int main(int argc, char *argv[]) {
             printf("Server: %s", buffer);
         } else {
             perror("recv");
+            log_error(ERR_INTERNAL_ERROR);
             running = false;
         }
     }

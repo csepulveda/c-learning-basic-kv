@@ -42,7 +42,7 @@ In another terminal, run the client:
 
 ```bash
 ./bin/client PING
-./bin/client SET foo=bar
+./bin/client SET foo bar
 ./bin/client GET foo
 ./bin/client DEL foo
 ./bin/client TIME

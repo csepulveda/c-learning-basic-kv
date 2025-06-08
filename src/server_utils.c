@@ -6,6 +6,7 @@
 #include "commands.h"
 #include "protocol.h"
 #include "server_utils.h"
+#include "errors.h"
 
 /**
  * @brief Parses and dispatches a client command to the appropriate handler.
@@ -39,7 +40,7 @@ void dispatch_command(int clientfd, const char *buffer) {
             break;
         case CMD_UNKNOWN:
         default:
-            send(clientfd, "Invalid command\n", 17, 0);
+            send(clientfd, ERR_UNKNOWN_CMD, strlen(ERR_UNKNOWN_CMD), 0); 
             break;
     }
 }

@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "../src/server_utils.h"
+#include "../src/errors.h"
 
 /**
  * @brief Tests the dispatch_command function by sending a command and verifying the response.
@@ -80,20 +81,18 @@ void test_handle_client(const char *cmd, const char *expected_resp) {
  */
 int main() {
     test_dispatch_command("PING\n", "PONG\n");
-    test_dispatch_command("SET test=test1\n", "OK\n");
+    test_dispatch_command("SET test test1\n", "OK\n");
     test_dispatch_command("GET test\n", "test1\n");
     test_dispatch_command("DEL test\n", "DELETED\n");
     test_dispatch_command("GOODBYE\n", "Goodbye!\n");
-    test_dispatch_command("NOEXIST\n", "Invalid command\n");
+    test_dispatch_command("NOEXIST\n", ERR_UNKNOWN_CMD);
 
     test_handle_client("PING\n", "PONG\n");
-    test_handle_client("SET test=test1\n", "OK\n");
+    test_handle_client("SET test test1\n", "OK\n");
     test_handle_client("GET test\n", "test1\n");
     test_handle_client("DEL test\n", "DELETED\n");
     test_handle_client("GOODBYE\n", "Goodbye!\n");
-    test_handle_client("NOEXIST\n", "Invalid command\n");
-
-
+    test_handle_client("NOEXIST\n", ERR_UNKNOWN_CMD);
 
     printf("✅ All build_command_string tests passed\n");
     return 0;

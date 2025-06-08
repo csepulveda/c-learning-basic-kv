@@ -7,9 +7,11 @@
 #include "commands.h"
 #include "kv_store.h"
 #include "protocol.h"
+#include "errors.h"
 
 #define BUFFER_SIZE 1024
-#define MAX_VAL_SIZE 1024
+
+
 
 static void cmd_ping(int clientfd, const char *message);
 static void cmd_time(int clientfd, const char *message);
@@ -67,31 +69,45 @@ static void cmd_goodbye(int clientfd, const char *message) {
 }
 
 static void cmd_set(int clientfd, const char *buffer) {
-    char key[128], value[128];
-    if (extract_key_value(buffer, key, value, sizeof(key), sizeof(value)) == 0) {
+    char key[MAX_KEY_LEN];
+    char value[MAX_VAL_LEN];
+
+    int res = extract_key_value(buffer, key, value, sizeof(key), sizeof(value));
+
+    if (res == EXTRACT_OK) {
         if (kv_set(key, value) == 0) {
             send(clientfd, "OK\n", 3, 0);
         } else {
-            send(clientfd, "ERROR\n", 6, 0);
+            send(clientfd, ERR_INTERNAL_ERROR, strlen(ERR_INTERNAL_ERROR), 0);
         }
     } else {
-        send(clientfd, "ERROR\n", 6, 0);
+        switch (res) {
+            case EXTRACT_ERR_KEY_TOO_LONG:
+                send(clientfd, ERR_KEY_TOO_LONG, strlen(ERR_KEY_TOO_LONG), 0);
+                break;
+            case EXTRACT_ERR_VALUE_TOO_LONG:
+                send(clientfd, ERR_VALUE_TOO_LONG, strlen(ERR_VALUE_TOO_LONG), 0);
+                break;
+            default:
+                send(clientfd, ERR_PARSE_ERROR, strlen(ERR_PARSE_ERROR), 0);
+                break;
+        }
     }
 }
 
 static void cmd_get(int clientfd, const char *buffer) {
-    char key[128];
+    char key[MAX_KEY_LEN];
     if (extract_key(buffer, key, sizeof(key)) == 0) {
         const char *val = kv_get(key);
         if (val) {
-	    size_t len = strnlen(val, MAX_VAL_SIZE);
+	    size_t len = strnlen(val, MAX_VAL_LEN);
             send(clientfd, val, len, 0);
             send(clientfd, "\n", 1, 0);
         } else {
-            send(clientfd, "NOT FOUND\n", 10, 0);
+            send(clientfd, ERR_NOT_FOUND, strlen(ERR_NOT_FOUND), 0);
         }
     } else {
-        send(clientfd, "ERROR\n", 6, 0);
+        send(clientfd, ERR_PARSE_ERROR, strlen(ERR_PARSE_ERROR), 0);
     }
 }
 
@@ -101,14 +117,14 @@ static void cmd_get(int clientfd, const char *buffer) {
  * Parses the key from the input buffer and attempts to delete it from the store. Sends "DELETED" if successful, "NOT FOUND" if the key does not exist, or "ERROR" if the key could not be parsed.
  */
 static void cmd_del(int clientfd, const char *buffer) {
-    char key[128];
+    char key[MAX_KEY_LEN];
     if (extract_key(buffer, key, sizeof(key)) == 0) { 
         if (kv_delete(key) == 0) {
             send(clientfd, "DELETED\n", 8, 0);
         } else {
-            send(clientfd, "NOT FOUND\n", 10, 0);
+            send(clientfd, ERR_NOT_FOUND, strlen(ERR_NOT_FOUND), 0);
         }
     } else {
-        send(clientfd, "ERROR\n", 6, 0);
+        send(clientfd, ERR_PARSE_ERROR, strlen(ERR_PARSE_ERROR), 0);
     }
 }

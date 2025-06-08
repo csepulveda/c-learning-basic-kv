@@ -2,6 +2,8 @@
 #include <stdio.h>
 
 #include "protocol.h"
+#include "kv_store.h"
+#include "errors.h"
 
 /**
  * @brief Determines the command type from a protocol message string.
@@ -25,22 +27,29 @@ command_t parse_command(const char *message) {
 }
 
 int extract_key_value(const char *message, char *key, char *value, size_t key_size, size_t value_size) {
-    const char *space = strchr(message, ' ');
-    if (!space) return -1;
+    const char *space1 = strchr(message, ' ');
+    if (!space1) return -1;
 
-    const char *equal = strchr(space + 1, '=');
-    if (!equal) return -1;
+    const char *space2 = strchr(space1 + 1, ' ');
+    if (!space2) return -1;
 
-    size_t key_len = equal - (space + 1);
-    size_t value_len = strnlen(equal + 1, value_size); //NOSONAR
+    size_t key_len = space2 - (space1 + 1);
+    if (key_len >= key_size || key_len >= MAX_KEY_LEN - 1) return EXTRACT_ERR_KEY_TOO_LONG;
 
-    if (key_len >= key_size || value_len >= value_size) return -1;
-
-    memcpy(key, space + 1, key_len);
+    memcpy(key, space1 + 1, key_len);
     key[key_len] = '\0';
 
-    snprintf(value, value_size, "%s", equal + 1);
+    // Skip spaces after key
+    const char *value_start = space2 + 1;
+    while (*value_start == ' ') value_start++;
+    if (*value_start == '\0') return EXTRACT_ERR_PARSE;
 
+    size_t value_len = strlen(value_start);
+    if (value_len >= MAX_VAL_LEN - 1) return EXTRACT_ERR_VALUE_TOO_LONG;
+
+    snprintf(value, value_size, "%s", value_start);
+
+    // Remove newline if exists
     char *newline = strchr(value, '\n');
     if (newline) *newline = '\0';
 

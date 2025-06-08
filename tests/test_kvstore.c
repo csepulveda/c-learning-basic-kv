@@ -13,7 +13,7 @@ int main() {
     assert(kv_delete("key1") == -1);
     /// fill to the maximum number of key-value pairs
     for (int i = 0; i < MAX_KV_PAIRS; i++) {
-        char key[32], value[128];
+        char key[MAX_KEY_LEN], value[MAX_VAL_LEN];
         snprintf(key, sizeof(key), "key%d", i);
         snprintf(value, sizeof(value), "value%d", i);
         assert(kv_set(key, value) == 0);
