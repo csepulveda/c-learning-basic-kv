@@ -60,7 +60,6 @@ void handle_command(int clientfd, command_t cmd, const char *message) {
  void cmd_set(int clientfd, const char *buffer) {
     char key[MAX_KEY_LEN];
     char value[MAX_VAL_LEN];
-
     int res = extract_key_value(buffer, key, value, sizeof(key), sizeof(value));
 
     if (res == EXTRACT_OK) {

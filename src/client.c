@@ -23,7 +23,8 @@
  * @return 0 on success, 1 on failure.
  */
 int main(int argc, char *argv[]) {
-    int sockfd, status;
+    int sockfd;
+    int status;
     ssize_t status_r;
     struct sockaddr_in addr;
     char buffer[BUFFER_SIZE];
