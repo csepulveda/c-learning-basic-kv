@@ -44,8 +44,9 @@ int extract_key_value(const char *message, char *key, char *value, size_t key_si
     while (*value_start == ' ') value_start++;
     if (*value_start == '\0') return EXTRACT_ERR_PARSE;
 
-    size_t value_len = strlen(value_start);
-    if (value_len >= MAX_VAL_LEN - 1) return EXTRACT_ERR_VALUE_TOO_LONG;
+    size_t value_len = strnlen(value_start, value_size);
+    if (value_len >= value_size - 1 || value_len >= MAX_VAL_LEN - 1)
+        return EXTRACT_ERR_VALUE_TOO_LONG;
 
     snprintf(value, value_size, "%s", value_start);
 
