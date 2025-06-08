@@ -34,7 +34,8 @@ $CLIENT_BIN "TIME" | grep -q "20" || fail "TIME did not return expected format"
 $CLIENT_BIN "PING" | grep -q "PONG" || fail "PING did not return PONG"
 
 # Test Very Long Command
-LONG_CMD=$(head -c 300 < /dev/zero | tr '\0' 'A')
+MAX_VAL_LEN=128
+LONG_CMD=$(head -c $((MAX_VAL_LEN + 1)) < /dev/zero | tr '\0' 'A')
 output=$($CLIENT_BIN "SET long $LONG_CMD")
 echo "$output" | grep -q "ERROR value too long" || fail "SET long command did not return ERROR value too long"
 
