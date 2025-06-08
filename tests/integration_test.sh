@@ -25,7 +25,7 @@ $CLIENT_BIN "GET test" | grep -q "123" || fail "GET did not return 123"
 $CLIENT_BIN "DEL test" | grep -q "DELETED" || fail "DEL did not return DELETED"
 
 # Test GET after DEL
-$CLIENT_BIN "GET test" | grep -q  "NOT FOUND" || fail "GET after DEL did not return NOT FOUND"
+$CLIENT_BIN "GET test" | grep "NOT FOUND" || fail "GET after DEL did not return NOT FOUND"
 
 # Test TIME
 $CLIENT_BIN "TIME" | grep -q "20" || fail "TIME did not return expected format"
