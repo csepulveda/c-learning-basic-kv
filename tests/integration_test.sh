@@ -42,7 +42,7 @@ echo "$output" | grep -q "ERROR value too long" || fail "SET long command did no
 $CLIENT_BIN "INVALID COMMAND" 2>&1 | grep -q "Invalid command: INVALID" || fail "Invalid command did not return ERROR"
 
 # test defining host and port
-HOST=127.0.0.1 PORT=8080 $CLIENT_BIN "SET tes 123"|grep -q "OK" || fail "SET did not return OK"
+HOST=127.0.0.1 PORT=8080 $CLIENT_BIN "SET test 123" | grep -q "OK" || fail "SET did not return OK"
 
 # Test interactive mode
 $CLIENT_BIN <<EOF | grep -q "OK"
