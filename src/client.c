@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
         }
         command_t cmd = parse_command(command);
         if (cmd == CMD_UNKNOWN) {
-            char command_name[BUFFER_SIZE];
+            char command_name[64];
             sscanf(command, "%s", command_name);
             log_error("Invalid command: %s\n", command_name);
             close(sockfd);
