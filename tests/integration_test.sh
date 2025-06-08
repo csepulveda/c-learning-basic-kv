@@ -61,16 +61,18 @@ $CLIENT_BIN "SET test" 2>&1 | grep -q "ERROR" || fail "Bad command did not retur
 LONG_CMD=$(head -c 1000 < /dev/zero | tr '\0' 'A')
 $CLIENT_BIN "$LONG_CMD" 2>&1 | grep -q "Invalid command" || fail "Very long command did not return Invalid command"
 
+# Determine buffer size from the header
+BUFFER_SIZE=$(grep '^#define BUFFER_SIZE' src/client_utils.h | awk '{print $3}')
+
 # Construct command string failure
-LONG_CMD=$(head -c 1500 < /dev/zero | tr '\0' 'A')
+LONG_CMD=$(head -c $((BUFFER_SIZE + 1)) < /dev/zero | tr '\0' 'A')
 output=$($CLIENT_BIN SET $LONG_CMD $LONG_CMD $LONG_CMD 2>&1 || true)
 echo "$output" | grep -q "Failed to construct command" || fail "Expected build_command_string failure not triggered"
 
 # Test Very Long Command with SET
-LONG_CMD=$(head -c 2000 < /dev/zero | tr '\0' 'A')
+LONG_CMD=$(head -c $((BUFFER_SIZE + 1)) < /dev/zero | tr '\0' 'A')
 output=$($CLIENT_BIN SET foo $LONG_CMD 2>&1 || true)
 echo "$output" | grep -q "Failed to construct command" || fail "Expected build_command_string failure not triggered"
-
 # Test concurrent clients
 echo "Testing concurrent clients..."
 
