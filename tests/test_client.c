@@ -53,7 +53,6 @@ void test_send_command_too_long() {
     assert(result == -1);
 }
 
-// 🚀 NUEVO TEST para handle_char
 void capture_stdout_start(FILE **original_stdout, FILE **tmp_file) {
     *original_stdout = stdout;
     *tmp_file = tmpfile();

@@ -92,8 +92,7 @@ bool handle_char(char c, char *line_buffer, size_t *line_pos, bool *first_line) 
             return true;  
         }
 
-        if (*first_line && strncmp(line_buffer, "RESPONSE", 8) == 0) {
-        } else {
+        if (!(*first_line && strncmp(line_buffer, "RESPONSE", 8) == 0)) {
             printf("%s\n", line_buffer);
         }
 
