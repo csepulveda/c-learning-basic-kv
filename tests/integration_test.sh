@@ -1,5 +1,7 @@
 #!/bin/bash
+set -euo pipefail
 
+# …rest of tests/integration_test.sh…
 SERVER_BIN=bin/server
 CLIENT_BIN=bin/client
 
