@@ -17,38 +17,6 @@ Simulate a basic key-value database similar to Redis for educational purposes.
 ## Data Structure
 
 ```mermaid
-static kv_node* hash_table[HASH_TABLE_SIZE];
-
-## data StrictireData Structure
-graph TD
-    A[hash_table[HASH_TABLE_SIZE]] --> B0[Bucket 0]
-    A --> B1[Bucket 1]
-    A --> B2[Bucket 2]
-    A --> B3[Bucket 3]
-    A --> Bn[Bucket N-1]
-
-    subgraph Bucket 0 [Bucket 0 (hash(key) == 0)]
-        B0 --> K0A["kv_node(key='foo', v
-```mermaid
-static kv_node* hash_table[HASH_TABLE_SIZE];alue='bar')"] --> K0B["kv_node(key='baz', value='qux')"] --> Null0[(null)]
-    end
-
-    subgraph Bucket 1 [Bucket 1 (hash(key) == 1)]
-        B1 --> Null1[(null)]
-    end
-
-    subgraph Bucket 2 [Bucket 2 (hash(key) == 2)]
-        B2 --> K2A["kv_node(key='hello', value='world')"] --> Null2[(null)]
-    end
-
-    subgraph Bucket N-1 [Bucket N-1 (hash(key) == N-1)]
-        Bn --> NullN[(null)]
-    end
-
-    style Null0 fill:#f0f0f0,stroke:#bbb
-    style Null1 fill:#f0f0f0,stroke:#bbb
-    style Null2 fill:#f0f0f0,stroke:#bbb
-    style NullN fill:#f0f0f0,stroke:#bbb
 graph TD
     A[hash_table[HASH_TABLE_SIZE]] --> B0[Bucket 0]
     A --> B1[Bucket 1]
