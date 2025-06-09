@@ -231,7 +231,7 @@ void cmd_mget(int clientfd, const char *buffer) {
     if (newline) *newline = '\0';
 
     char *saveptr = NULL;
-    char *token = strtok_r(copy + 5, " ", &saveptr);
+    char *token = strtok_r(copy + 5, " ", &saveptr); //NOSONAR
 
     send_response_header(clientfd, "OK MULTI");
 
