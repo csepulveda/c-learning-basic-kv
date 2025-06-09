@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "protocol.h"
-#include "kv_store.h"
+#include "kvstore.h"
 #include "errors.h"
 
 /**
