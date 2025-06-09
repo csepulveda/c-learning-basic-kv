@@ -44,3 +44,16 @@ graph TD
     style Null1 fill:#f0f0f0,stroke:#bbb
     style Null2 fill:#f0f0f0,stroke:#bbb
     style NullN fill:#f0f0f0,stroke:#bbb
+```
+
+## Client response handling
+
+- `recv()` reads byte by byte with `handle_char()` to support fragmentation.
+- Lines are accumulated until `\n`.
+- `END` is detected to stop reading.
+
+## Possible improvements
+
+- Support for key expiration.
+- Support for data types (lists, hashes).
+- Use of epoll or select for better performance.
