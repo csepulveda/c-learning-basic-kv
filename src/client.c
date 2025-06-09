@@ -25,7 +25,6 @@
 int main(int argc, char *argv[]) {
     int sockfd;
     int status;
-    ssize_t status_r;
     struct sockaddr_in addr;
     char buffer[BUFFER_SIZE];
 
@@ -77,38 +76,7 @@ int main(int argc, char *argv[]) {
         }
 
         send_command(sockfd, command);
-
-        // Robust recv loop with header skipping
-        bool found_end = false;
-        bool first_line = true;
-        while ((status_r = recv(sockfd, buffer, sizeof(buffer) - 1, 0)) > 0) {
-            buffer[status_r] = '\0';
-
-            char *p = buffer;
-            while (p) {
-                char *next_line = strchr(p, '\n');
-                if (next_line) {
-                    *next_line = '\0';
-                    next_line++;
-                }
-
-                if (strcmp(p, "END") == 0) {
-                    found_end = true;
-                    break;
-                }
-
-                if (first_line && strncmp(p, "RESPONSE", 8) == 0) {
-                    // skip header
-                } else {
-                    printf("%s\n", p);
-                }
-
-                first_line = false;
-                p = next_line;
-            }
-
-            if (found_end) break;
-        }
+        read_response(sockfd);
 
         close(sockfd);
         return 0;
@@ -128,44 +96,7 @@ int main(int argc, char *argv[]) {
         }
 
         send_command(sockfd, buffer);
-
-        // Robust recv loop with header skipping
-        bool found_end = false;
-        bool first_line = true;
-        while ((status_r = recv(sockfd, buffer, sizeof(buffer) - 1, 0)) > 0) {
-            buffer[status_r] = '\0';
-
-            char *p = buffer;
-            while (p) {
-                char *next_line = strchr(p, '\n');
-                if (next_line) {
-                    *next_line = '\0';
-                    next_line++;
-                }
-
-                if (strcmp(p, "END") == 0) {
-                    found_end = true;
-                    break;
-                }
-
-                if (first_line && strncmp(p, "RESPONSE", 8) == 0) {
-                    // skip header
-                } else {
-                    printf("%s\n", p);
-                }
-
-                first_line = false;
-                p = next_line;
-            }
-
-            if (found_end) break;
-        }
-
-        if (status_r <= 0) {
-            perror("recv");
-            log_error(ERR_INTERNAL_ERROR);
-            running = false;
-        }
+        read_response(sockfd);
     }
 
     close(sockfd);

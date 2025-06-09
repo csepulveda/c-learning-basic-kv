@@ -4,9 +4,11 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <stdbool.h>
 
 #include "client_utils.h"
 #include "logs.h"
+#include "errors.h"
 
 /**
  * @brief Constructs a command string from command-line arguments.
@@ -78,4 +80,46 @@ int send_command(int sockfd, const char *command) {
     }
 
     return (int)bytes_sent;
+}
+
+
+void read_response(int sockfd) {
+    ssize_t status_r;
+    char buffer[BUFFER_SIZE];
+    bool found_end = false;
+    bool first_line = true;
+
+    while ((status_r = recv(sockfd, buffer, sizeof(buffer) - 1, 0)) > 0) {
+        buffer[status_r] = '\0';
+
+        char *p = buffer;
+        while (p) {
+            char *next_line = strchr(p, '\n');
+            if (next_line) {
+                *next_line = '\0';
+                next_line++;
+            }
+
+            if (strcmp(p, "END") == 0) {
+                found_end = true;
+                break;
+            }
+
+            if (first_line && strncmp(p, "RESPONSE", 8) == 0) {
+                // skip header
+            } else {
+                printf("%s\n", p);
+            }
+
+            first_line = false;
+            p = next_line;
+        }
+
+        if (found_end) break;
+    }
+
+    if (status_r <= 0 && !found_end) {
+        perror("recv");
+        log_error(ERR_INTERNAL_ERROR);
+    }
 }
