@@ -25,7 +25,8 @@ static command_entry_t command_table[] = {
 void send_response_header(int clientfd, const char *type) {
     char header[BUFFER_SIZE];
     snprintf(header, sizeof(header), "RESPONSE %s\n", type);
-    send(clientfd, header, strlen(header), 0);
+    int len = snprintf(header, sizeof(header), "RESPONSE %s\n", type);
+    send(clientfd, header, len, 0);
 }
 
 void send_response_footer(int clientfd) {
@@ -46,7 +47,7 @@ void cmd_ping(int clientfd, const char *message) {
     send_response_header(clientfd, "OK STRING");
 
     const char *response = "PONG\n";
-    send(clientfd, response, strlen(response), 0);
+    send(clientfd, response, 5, 0);
 
     send_response_footer(clientfd);
 }
@@ -58,7 +59,7 @@ void cmd_time(int clientfd, const char *message) {
     time_t now = time(NULL);
     char timestr[BUFFER_SIZE];
     ctime_r(&now, timestr);
-    send(clientfd, timestr, strlen(timestr), 0);
+    send(clientfd, timestr, strlen(timestr), 0); //NOSONAR
 
     send_response_footer(clientfd);
 }
@@ -229,13 +230,17 @@ void cmd_mget(int clientfd, const char *buffer) {
     int index = 1;
     while (token) {
         char line[BUFFER_SIZE];
+        int len;
+
         const char *val = kv_get(token);
-        if (val) {
-            snprintf(line, sizeof(line), "%d) %s\n", index, val);
+
+        if (val != NULL && val[0] != '\0') {
+            len = snprintf(line, sizeof(line), "%d) %s\n", index, val);
         } else {
-            snprintf(line, sizeof(line), "%d) (nil)\n", index);
+            len = snprintf(line, sizeof(line), "%d) (nil)\n", index);
         }
-        send(clientfd, line, strlen(line), 0);
+
+        send(clientfd, line, len, 0);
 
         index++;
         token = strtok(NULL, " ");

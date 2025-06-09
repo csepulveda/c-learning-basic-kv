@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #define IS_CMD_TERMINATOR(c) ((c) == ' ' || (c) == '\0' || (c) == '\n' || (c) == '\r')
+#define IS_SIMPLE_CMD_TERMINATOR(c) ((c) == ' ' || (c) == '\0')
 
 typedef enum {
     CMD_PING,

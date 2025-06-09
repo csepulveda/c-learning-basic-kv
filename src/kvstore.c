@@ -43,6 +43,7 @@ int kv_delete(const char *key) {
     for (int i = 0; i < MAX_KV_PAIRS; i++) {
         if (strcmp(store[i].key, key) == 0) {
             store[i].key[0] = '\0';
+            store[i].value[0] = '\0';
             return 0;
         }
     }
