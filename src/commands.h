@@ -23,5 +23,7 @@ void send_response_header(int clientfd, const char *type);
 void send_response_footer(int clientfd);
 void send_error_response(int clientfd, int res);
 
+int extract_key_from_ptr(const char **p, char *key, size_t key_size);
+int extract_key_value(const char *message, char *key, char *value, size_t key_size, size_t value_size);
 
 #endif
