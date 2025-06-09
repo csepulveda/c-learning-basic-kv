@@ -15,12 +15,12 @@
  * @return command_t The corresponding command type, or CMD_UNKNOWN if no match is found.
  */
 command_t parse_command(const char *message) {
-    if (strncmp(message, "SET", 3) == 0 && IS_CMD_TERMINATOR(message[3])) return CMD_SET;
-    if (strncmp(message, "GET", 3) == 0 && IS_CMD_TERMINATOR(message[3])) return CMD_GET;
-    if (strncmp(message, "DEL", 3) == 0 && IS_CMD_TERMINATOR(message[3])) return CMD_DEL;
+    if (strncmp(message, "SET", 3) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[3])) return CMD_SET;
+    if (strncmp(message, "GET", 3) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[3])) return CMD_GET;
+    if (strncmp(message, "DEL", 3) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[3])) return CMD_DEL;
 
-    if (strncmp(message, "MSET", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_MSET;
-    if (strncmp(message, "MGET", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_MGET;
+    if (strncmp(message, "MSET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_MSET;
+    if (strncmp(message, "MGET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_MGET;
 
     if (strncmp(message, "PING", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_PING;
     if (strncmp(message, "TIME", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_TIME;

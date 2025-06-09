@@ -60,6 +60,32 @@ void test_cmd_set(const char *cmd_buffer, const char *expected_resp) {
     close(fds[1]);
 }
 
+void test_send_error_response(int error_code, const char *expected_msg) {
+    int fds[2];
+    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+
+    // Call send_error_response
+    send_error_response(fds[1], error_code);
+
+    // Read response
+    char buf[BUF_SIZE];
+    recv_until_end(fds[0], buf, sizeof(buf));
+
+    printf("send_error_response(%d) -> '%s'\n", error_code, buf);
+
+    // Assert header
+    assert(strstr(buf, "RESPONSE ERROR") != NULL);
+
+    // Assert error message
+    assert(strstr(buf, expected_msg) != NULL);
+
+    // Assert footer
+    assert(strstr(buf, "END") != NULL);
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
 int main() {
     // Test OK
     test_cmd_set("SET foo bar\n", "OK");
@@ -83,6 +109,12 @@ int main() {
     // Test parse error
     test_cmd_set("SET foo\n", "ERROR parse error");
 
+    // Test send_error_response
+    test_send_error_response(EXTRACT_ERR_PARSE, ERR_PARSE_ERROR);
+    test_send_error_response(EXTRACT_ERR_KEY_TOO_LONG, ERR_KEY_TOO_LONG);
+    test_send_error_response(EXTRACT_ERR_VALUE_TOO_LONG, ERR_VALUE_TOO_LONG);
+    test_send_error_response(EXTRACT_ERR_KEY_NOT_FOUND, ERR_NOT_FOUND);
+    
     printf("✅ All cmd_set tests passed!\n");
     return 0;
 }
