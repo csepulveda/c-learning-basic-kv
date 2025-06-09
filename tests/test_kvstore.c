@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "../src/kv_store.h"
+#include "../src/kvstore.h"
 
 int main() {
     kv_init();

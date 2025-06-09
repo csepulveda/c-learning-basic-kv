@@ -1,5 +1,5 @@
-#ifndef KV_STORE_H
-#define KV_STORE_H
+#ifndef kvstore_H
+#define kvstore_H
 
 #define HASH_TABLE_SIZE 256 
 #define MAX_KEY_LEN 32

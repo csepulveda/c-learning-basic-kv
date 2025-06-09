@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 #include "commands.h"
-#include "kv_store.h"
+#include "kvstore.h"
 #include "protocol.h"
 #include "errors.h"
 

@@ -9,7 +9,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "kv_store.h"
+#include "kvstore.h"
 #include "logs.h"
 #include "server_utils.h"
 

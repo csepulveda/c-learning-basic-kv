@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "kv_store.h"
+#include "kvstore.h"
 
 static kv_node* hash_table[HASH_TABLE_SIZE];
 

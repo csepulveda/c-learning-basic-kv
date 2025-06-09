@@ -9,7 +9,7 @@ Simulate a basic key-value database similar to Redis for educational purposes.
 - `server.c`: Main loop, socket and command dispatch.
 - `client.c`: TCP client logic.
 - `commands.c`: Logic for each command.
-- `kv_store.c`: In-memory storage (hash table with chaining).
+- `kvstore.c`: In-memory storage (hash table with chaining).
 - `protocol.c`: Response helpers.
 - `client_utils.c`: Line-by-line `recv()` handling.
 - `tests/`: Automated command tests.
