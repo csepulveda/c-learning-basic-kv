@@ -3,7 +3,6 @@
 
 #define HASH_TABLE_SIZE 256 
 #define MAX_KEY_LEN 32
-#define MAX_KV_PAIRS 100
 #define MAX_VAL_LEN 128
 
 typedef struct kv_node {

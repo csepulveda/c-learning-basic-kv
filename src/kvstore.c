@@ -9,7 +9,7 @@ static kv_node* hash_table[HASH_TABLE_SIZE];
 static unsigned int hash(const char* key) {
     unsigned int hash = 5381;
     int c;
-    while ((c = *key++)) {
+    while ((c = (unsigned char)*key++)) {
         hash = ((hash << 5) + hash) + c;
     }
     return hash % HASH_TABLE_SIZE;
