@@ -1,6 +1,9 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdbool.h>
 #include "../src/client_utils.h"
 
 #define BUFFER_SIZE 1024
@@ -50,12 +53,61 @@ void test_send_command_too_long() {
     assert(result == -1);
 }
 
+// 🚀 NUEVO TEST para handle_char
+void capture_stdout_start(FILE **original_stdout, FILE **tmp_file) {
+    *original_stdout = stdout;
+    *tmp_file = tmpfile();
+    stdout = *tmp_file;
+}
+
+void capture_stdout_stop(FILE *original_stdout, FILE *tmp_file, char *output, size_t output_size) {
+    fflush(stdout);
+    rewind(tmp_file);
+    fread(output, 1, output_size - 1, tmp_file);
+    output[output_size - 1] = '\0';
+    fclose(tmp_file);
+    stdout = original_stdout;
+}
+
+void test_handle_char() {
+    char line_buffer[BUFFER_SIZE];
+    size_t line_pos = 0;
+    bool first_line = true;
+
+    FILE *orig_stdout, *tmp;
+    char captured[BUFFER_SIZE];
+
+    const char *input = "RESPONSE OK\nHello World\nEND\n";
+    bool found_end = false;
+
+    capture_stdout_start(&orig_stdout, &tmp);
+
+    for (size_t i = 0; input[i] != '\0'; i++) {
+        bool end = handle_char(input[i], line_buffer, &line_pos, &first_line);
+        if (end) {
+            found_end = true;
+            break;
+        }
+    }
+
+    capture_stdout_stop(orig_stdout, tmp, captured, sizeof(captured));
+
+    assert(strstr(captured, "Hello World") != NULL);
+    assert(strstr(captured, "RESPONSE") == NULL); 
+    assert(found_end == true);
+    assert(first_line == false);
+    assert(line_pos == 0);
+
+    printf("✅ test_handle_char passed\n");
+}
+
 int main() {
     test_single_argument();
     test_multiple_arguments();
     test_long_input_truncates();
     test_empty_buffer();
     test_send_command_too_long();
+    test_handle_char();
     printf("✅ All build_command_string tests passed\n");
     return 0;
 }

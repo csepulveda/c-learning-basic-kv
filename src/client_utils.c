@@ -82,18 +82,28 @@ int send_command(int sockfd, const char *command) {
     return (int)bytes_sent;
 }
 
-static bool process_response_line(const char *line, bool *first_line) {
-    if (strcmp(line, "END") == 0) {
-        return true;
+
+bool handle_char(char c, char *line_buffer, size_t *line_pos, bool *first_line) {
+    if (c == '\n') {
+        line_buffer[*line_pos] = '\0';
+
+        if (strcmp(line_buffer, "END") == 0) {
+            *line_pos = 0; 
+            return true;  
+        }
+
+        if (*first_line && strncmp(line_buffer, "RESPONSE", 8) == 0) {
+        } else {
+            printf("%s\n", line_buffer);
+        }
+
+        *first_line = false;
+        *line_pos = 0; 
+    } else if (*line_pos < BUFFER_SIZE - 1) {
+        line_buffer[(*line_pos)++] = c;
     }
 
-    if (*first_line && strncmp(line, "RESPONSE", 8) == 0) {
-    } else {
-        printf("%s\n", line);
-    }
-
-    *first_line = false;
-    return false;
+    return false; 
 }
 
 void read_response(int sockfd) {
@@ -108,13 +118,9 @@ void read_response(int sockfd) {
         buffer[status_r] = '\0';
 
         for (int i = 0; i < status_r; i++) {
-            if (buffer[i] == '\n') {
-                line_buffer[line_pos] = '\0';
-                found_end = process_response_line(line_buffer, &first_line);
-                if (found_end) break;
-                line_pos = 0;
-            } else if (line_pos < sizeof(line_buffer) - 1) {
-                line_buffer[line_pos++] = buffer[i];
+            if (handle_char(buffer[i], line_buffer, &line_pos, &first_line)) {
+                found_end = true;
+                break;
             }
         }
 
