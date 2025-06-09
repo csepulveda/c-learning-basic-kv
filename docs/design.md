@@ -13,9 +13,9 @@ Simulate a basic key-value database similar to Redis for educational purposes.
 - `protocol.c`: Response helpers.
 - `client_utils.c`: Line-by-line `recv()` handling.
 - `tests/`: Automated command tests.
-
 ## Data Structure
 
+We use the djb2 algorithm (`hash = ((hash << 5) + hash) + c`) to compute `hash(key) % HASH_TABLE_SIZE`, distributing entries into the bucket array shown below.
 ```mermaid
 graph TD
     A["hash_table (HASH_TABLE_SIZE)"] --> B0["Bucket 0"]
