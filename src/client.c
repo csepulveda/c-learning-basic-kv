@@ -13,6 +13,7 @@
 
 #include "logs.h"
 #include "client_utils.h"
+#include "errors.h"
 
 /**
  * @brief Entry point for the TCP client application.
@@ -22,8 +23,8 @@
  * @return 0 on success, 1 on failure.
  */
 int main(int argc, char *argv[]) {
-    int sockfd, status;
-    ssize_t status_r;
+    int sockfd;
+    int status;
     struct sockaddr_in addr;
     char buffer[BUFFER_SIZE];
 
@@ -52,13 +53,6 @@ int main(int argc, char *argv[]) {
 
     // Line command mode
     if (argc > 1) {
-        command_t cmd = parse_command(argv[1]);
-        if (cmd == CMD_UNKNOWN) {
-            log_error("Invalid command: %s\n", argv[1]);
-            close(sockfd);
-            return 1;
-        }
-
         char command[BUFFER_SIZE] = {0};
         if (build_command_string(argc, argv, command, sizeof(command)) != 0) {
             log_error("Failed to construct command\n");
@@ -66,10 +60,24 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
+        command_t cmd = parse_command(command);
+        if (cmd == CMD_UNKNOWN) {
+            char command_name[64];
+            sscanf(command, "%s", command_name);
+            log_error("Invalid command: %s\n", command_name);
+            close(sockfd);
+            return 1;
+        }
+
+        if (build_command_string(argc, argv, command, sizeof(command)) != 0) {
+            log_error("Failed to construct command\n");
+            close(sockfd);
+            return 1;
+        }
+
         send_command(sockfd, command);
-        memset(buffer, 0, sizeof(buffer));
-        recv(sockfd, buffer, sizeof(buffer), 0);
-        printf("Response: %s", buffer);
+        read_response(sockfd);
+
         close(sockfd);
         return 0;
     }
@@ -88,16 +96,7 @@ int main(int argc, char *argv[]) {
         }
 
         send_command(sockfd, buffer);
-
-        memset(buffer, 0, sizeof(buffer));
-        status_r = recv(sockfd, buffer, sizeof(buffer), 0);
-
-        if (status_r > 0) {
-            printf("Server: %s", buffer);
-        } else {
-            perror("recv");
-            running = false;
-        }
+        read_response(sockfd);
     }
 
     close(sockfd);

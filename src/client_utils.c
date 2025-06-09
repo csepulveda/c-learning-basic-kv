@@ -4,9 +4,11 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <stdbool.h>
 
 #include "client_utils.h"
 #include "logs.h"
+#include "errors.h"
 
 /**
  * @brief Constructs a command string from command-line arguments.
@@ -78,4 +80,54 @@ int send_command(int sockfd, const char *command) {
     }
 
     return (int)bytes_sent;
+}
+
+
+bool handle_char(char c, char *line_buffer, size_t *line_pos, bool *first_line) {
+    if (c == '\n') {
+        line_buffer[*line_pos] = '\0';
+
+        if (strcmp(line_buffer, "END") == 0) {
+            *line_pos = 0; 
+            return true;  
+        }
+
+        if (!(*first_line && strncmp(line_buffer, "RESPONSE", 8) == 0)) {
+            printf("%s\n", line_buffer);
+        }
+
+        *first_line = false;
+        *line_pos = 0; 
+    } else if (*line_pos < BUFFER_SIZE - 1) {
+        line_buffer[(*line_pos)++] = c;
+    }
+
+    return false; 
+}
+
+void read_response(int sockfd) {
+    ssize_t status_r;
+    char buffer[BUFFER_SIZE];
+    char line_buffer[BUFFER_SIZE] = {0};
+    size_t line_pos = 0;
+    bool found_end = false;
+    bool first_line = true;
+
+    while ((status_r = recv(sockfd, buffer, sizeof(buffer) - 1, 0)) > 0) {
+        buffer[status_r] = '\0';
+
+        for (int i = 0; i < status_r; i++) {
+            if (handle_char(buffer[i], line_buffer, &line_pos, &first_line)) {
+                found_end = true;
+                break;
+            }
+        }
+
+        if (found_end) break;
+    }
+
+    if (status_r <= 0 && !found_end) {
+        perror("recv");
+        log_error(ERR_INTERNAL_ERROR);
+    }
 }

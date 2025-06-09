@@ -3,13 +3,17 @@
 
 #include <stddef.h>
 
+#define IS_CMD_TERMINATOR(c) ((c) == ' ' || (c) == '\0' || (c) == '\n' || (c) == '\r')
+#define IS_SIMPLE_CMD_TERMINATOR(c) ((c) == ' ')
+
 typedef enum {
     CMD_PING,
     CMD_TIME,
-    CMD_GOODBYE,
     CMD_SET,
     CMD_GET,
     CMD_DEL,
+    CMD_MSET,
+    CMD_MGET,
     CMD_UNKNOWN = -1
 } command_t;
 

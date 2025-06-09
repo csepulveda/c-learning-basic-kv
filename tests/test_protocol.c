@@ -11,17 +11,16 @@
  * @return int Returns 0 upon successful completion of all tests.
  */
 int main() {
-    assert(parse_command("SET key=value") == CMD_SET);
+    assert(parse_command("SET key value") == CMD_SET);
     assert(parse_command("PING") == CMD_PING);
     assert(parse_command("PING ") == CMD_PING);
     assert(parse_command("PING\n") == CMD_PING);
-
-    assert(parse_command("GOODBYE") == CMD_GOODBYE);
-    assert(parse_command("GOODBYE ") == CMD_GOODBYE);
-    assert(parse_command("GOODBYE\n") == CMD_GOODBYE);
+    assert(parse_command("SET ") == CMD_SET);
+    assert(parse_command("GET ") == CMD_GET);
+    assert(parse_command("DEL ") == CMD_DEL);
 
     char k[64], v[64];
-    assert(extract_key_value("SET foo=bar", k, v, 64, 64) == 0);
+    assert(extract_key_value("SET foo bar", k, v, 64, 64) == 0);
     assert(strcmp(k, "foo") == 0 && strcmp(v, "bar") == 0);
     
     assert(extract_key("GET key", k, 64) == 0);

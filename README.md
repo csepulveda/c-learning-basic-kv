@@ -8,7 +8,6 @@ The project supports basic commands similar to Redis:
 
 - `PING` — respond with `PONG`
 - `TIME` — return current server time
-- `GOODBYE` — close the connection
 - `SET key=value` — store a key-value pair
 - `GET key` — retrieve the value of a key
 - `DEL key` — delete a key
@@ -42,11 +41,10 @@ In another terminal, run the client:
 
 ```bash
 ./bin/client PING
-./bin/client SET foo=bar
+./bin/client SET foo bar
 ./bin/client GET foo
 ./bin/client DEL foo
 ./bin/client TIME
-./bin/client GOODBYE
 ```
 
 ## Testing
