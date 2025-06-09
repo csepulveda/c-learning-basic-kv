@@ -49,7 +49,7 @@ output=$($CLIENT_BIN "PING")
 assert_contains "$output" "PONG" "PING did not return PONG"
 
 # Test Very Long Command
-MAX_VAL_LEN=128
+MAX_VAL_LEN=$(grep '^#define MAX_VAL_LEN' src/protocol.h | awk '{print $3}')
 LONG_CMD=$(head -c $((MAX_VAL_LEN + 1)) < /dev/zero | tr '\0' 'A')
 output=$($CLIENT_BIN "SET long $LONG_CMD")
 assert_contains "$output" "ERROR value too long" "SET long command did not return ERROR value too long"
