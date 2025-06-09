@@ -137,33 +137,69 @@ void cmd_mset(int clientfd, const char *buffer) {
     char copy[BUFFER_SIZE];
     snprintf(copy, sizeof(copy), "%s", buffer);
 
-    char *token = strtok(copy + 5, " \n"); // skip "MSET "
+    const char *p = copy + 5;  // Skip "MSET "
+    while (*p == ' ') p++;
 
-    while (token) {
-        char *key = token;
-        token = strtok(NULL, " \n");
-        if (!token) {
-            send_response_header(clientfd, "ERROR");
-            send(clientfd, ERR_PARSE_ERROR, strlen(ERR_PARSE_ERROR), 0);
-            send_response_footer(clientfd);
-            return;
-        }
-        char *value = token;
-
-        // Check key/value length
-        if (strlen(key) >= MAX_KEY_LEN - 1) {
+    while (*p != '\0' && *p != '\n') {
+        // Extract key
+        char key[MAX_KEY_LEN];
+        const char *key_start = p;
+        while (*p != ' ' && *p != '\0' && *p != '\n') p++;
+        size_t key_len = p - key_start;
+        if (key_len >= MAX_KEY_LEN) {
             send_response_header(clientfd, "ERROR");
             send(clientfd, ERR_KEY_TOO_LONG, strlen(ERR_KEY_TOO_LONG), 0);
             send_response_footer(clientfd);
             return;
         }
-        if (strlen(value) >= MAX_VAL_LEN - 1) {
+        memcpy(key, key_start, key_len);
+        key[key_len] = '\0';
+
+        while (*p == ' ') p++;
+        if (*p == '\0' || *p == '\n') {
             send_response_header(clientfd, "ERROR");
-            send(clientfd, ERR_VALUE_TOO_LONG, strlen(ERR_VALUE_TOO_LONG), 0);
+            send(clientfd, ERR_PARSE_ERROR, strlen(ERR_PARSE_ERROR), 0);
             send_response_footer(clientfd);
             return;
         }
 
+        // Extract value
+        char value[MAX_VAL_LEN];
+        if (*p == '"') {
+            p++;
+            const char *value_start = p;
+            const char *quote_end = strchr(p, '"');
+            if (!quote_end) {
+                send_response_header(clientfd, "ERROR");
+                send(clientfd, ERR_PARSE_ERROR, strlen(ERR_PARSE_ERROR), 0);
+                send_response_footer(clientfd);
+                return;
+            }
+            size_t value_len = quote_end - value_start;
+            if (value_len >= MAX_VAL_LEN) {
+                send_response_header(clientfd, "ERROR");
+                send(clientfd, ERR_VALUE_TOO_LONG, strlen(ERR_VALUE_TOO_LONG), 0);
+                send_response_footer(clientfd);
+                return;
+            }
+            memcpy(value, value_start, value_len);
+            value[value_len] = '\0';
+            p = quote_end + 1;
+        } else {
+            const char *value_start = p;
+            while (*p != ' ' && *p != '\0' && *p != '\n') p++;
+            size_t value_len = p - value_start;
+            if (value_len >= MAX_VAL_LEN) {
+                send_response_header(clientfd, "ERROR");
+                send(clientfd, ERR_VALUE_TOO_LONG, strlen(ERR_VALUE_TOO_LONG), 0);
+                send_response_footer(clientfd);
+                return;
+            }
+            memcpy(value, value_start, value_len);
+            value[value_len] = '\0';
+        }
+
+        // Set key-value
         if (kv_set(key, value) != 0) {
             send_response_header(clientfd, "ERROR");
             send(clientfd, ERR_INTERNAL_ERROR, strlen(ERR_INTERNAL_ERROR), 0);
@@ -171,7 +207,7 @@ void cmd_mset(int clientfd, const char *buffer) {
             return;
         }
 
-        token = strtok(NULL, " \n");
+        while (*p == ' ') p++;
     }
 
     send_response_header(clientfd, "OK STRING");

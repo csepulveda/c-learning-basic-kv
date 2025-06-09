@@ -30,11 +30,12 @@ command_t parse_command(const char *message) {
 
 int extract_key_value(const char *message, char *key, char *value, size_t key_size, size_t value_size) {
     const char *space1 = strchr(message, ' ');
-    if (!space1) return -1;
+    if (!space1) return EXTRACT_ERR_PARSE;
 
     const char *space2 = strchr(space1 + 1, ' ');
-    if (!space2) return -1;
+    if (!space2) return EXTRACT_ERR_PARSE;
 
+    // Extract key
     size_t key_len = space2 - (space1 + 1);
     if (key_len >= key_size || key_len >= MAX_KEY_LEN - 1) return EXTRACT_ERR_KEY_TOO_LONG;
 
@@ -46,17 +47,28 @@ int extract_key_value(const char *message, char *key, char *value, size_t key_si
     while (*value_start == ' ') value_start++;
     if (*value_start == '\0') return EXTRACT_ERR_PARSE;
 
-    size_t value_len = strnlen(value_start, value_size);
-    if (value_len >= value_size - 1 || value_len >= MAX_VAL_LEN - 1)
-        return EXTRACT_ERR_VALUE_TOO_LONG;
+    // Check if value is quoted
+    if (*value_start == '"') {
+        value_start++;
+        const char *quote_end = strchr(value_start, '"');
+        if (!quote_end) return EXTRACT_ERR_PARSE;
 
-    snprintf(value, value_size, "%s", value_start);
+        size_t value_len = quote_end - value_start;
+        if (value_len >= value_size || value_len >= MAX_VAL_LEN - 1) return EXTRACT_ERR_VALUE_TOO_LONG;
 
-    // Remove newline if exists
-    char *newline = strchr(value, '\n');
-    if (newline) *newline = '\0';
+        memcpy(value, value_start, value_len);
+        value[value_len] = '\0';
+    } else {
+        // Unquoted value: take until newline
+        size_t value_len = strnlen(value_start, value_size);
+        if (value_len >= value_size - 1 || value_len >= MAX_VAL_LEN - 1) return EXTRACT_ERR_VALUE_TOO_LONG;
 
-    return 0;
+        snprintf(value, value_size, "%s", value_start);
+        char *newline = strchr(value, '\n');
+        if (newline) *newline = '\0';
+    }
+
+    return EXTRACT_OK;
 }
 
 int extract_key(const char *message, char *key, size_t key_size) {

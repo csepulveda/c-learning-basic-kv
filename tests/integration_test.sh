@@ -108,6 +108,15 @@ assert_contains "$output" "1) v1" "MGET k1 failed"
 assert_contains "$output" "2) (nil)" "MGET missing key failed"
 assert_contains "$output" "3) v3" "MGET k3 failed"
 
+# Test SET with quoted value
+$CLIENT_BIN 'SET quoted "hello world with spaces"' | grep -q "OK" || fail "SET quoted value did not return OK"
+
+# Test GET quoted value
+$CLIENT_BIN "GET quoted" | grep -q "hello world with spaces" || fail "GET quoted value did not return correct value"
+
+# Test MSET with quoted values
+$CLIENT_BIN 'MSET q1 "val 1" q2 "val 2" q3 "val 3"' | grep -q "OK" || fail "MSET quoted values did not return OK"
+
 # Test concurrent clients
 echo "Testing concurrent clients..."
 seq 1 10 | parallel -j10 --bar "$CLIENT_BIN \"SET concurrent{} value{}\""
@@ -133,6 +142,12 @@ assert_contains "$(cat nc_out.txt)" "42" "NC GET failed (value)"
 echo -ne "MGET nc_test unknown\n" | nc 127.0.0.1 8080 > nc_out.txt
 assert_contains "$(cat nc_out.txt)" "1) 42" "NC MGET failed (existing key)"
 assert_contains "$(cat nc_out.txt)" "2) (nil)" "NC MGET failed (missing key)"
+
+# Test MGET quoted values
+output=$($CLIENT_BIN "MGET q1 q2 q3")
+echo "$output" | grep -q "1) val 1" || fail "MGET did not return val 1"
+echo "$output" | grep -q "2) val 2" || fail "MGET did not return val 2"
+echo "$output" | grep -q "3) val 3" || fail "MGET did not return val 3"
 
 # Shutdown server
 kill $SERVER_PID
