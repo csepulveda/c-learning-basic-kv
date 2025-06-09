@@ -100,8 +100,8 @@ int main() {
 
     // Test value too long
     char long_value[MAX_VAL_LEN + 100];
-    memset(long_value, 'B', sizeof(long_value) - 1);
-    long_value[sizeof(long_value) - 1] = '\0';
+    memset(long_value, 'B', MAX_VAL_LEN + 50);  // Ensure it exceeds MAX_VAL_LEN
+    long_value[MAX_VAL_LEN + 50] = '\0';
     char buffer2[BUF_SIZE];
     snprintf(buffer2, sizeof(buffer2), "SET foo %s\n", long_value);
     test_cmd_set(buffer2, "ERROR value too long");
