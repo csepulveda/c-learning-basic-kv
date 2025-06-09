@@ -1,7 +1,8 @@
 .DEFAULT_GOAL := all
 
+GIT_VERSION := $(shell git describe --tags --always)
 CC       := gcc
-CFLAGS   := -Wall -Wextra -O2
+CFLAGS   := -Wall -Wextra -O2 -DVERSION=\"$(GIT_VERSION)\"
 CFLAGS_TEST := -Wall -Wextra -O0 -g -fprofile-arcs -ftest-coverage
 LDFLAGS  := -lpthread
 LDFLAGS_TEST := --coverage

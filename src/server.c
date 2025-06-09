@@ -13,6 +13,10 @@
 #include "logs.h"
 #include "server_utils.h"
 
+#ifndef VERSION
+#define VERSION "dev"
+#endif
+
 volatile sig_atomic_t running = 1;
 int serverfd;
 
@@ -38,6 +42,7 @@ void handle_sigterm(int sig) {
  * @return int Returns 0 on normal termination, or 1 if socket binding or listening fails.
  */
 int main() {
+    log_info("Version: %s\n", VERSION);
     kv_init();
     int status;
     int SERVER_PORT = getenv("PORT") ? atoi(getenv("PORT")) : 8080;

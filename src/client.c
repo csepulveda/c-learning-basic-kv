@@ -15,6 +15,10 @@
 #include "client_utils.h"
 #include "errors.h"
 
+#ifndef VERSION
+#define VERSION "dev"
+#endif
+
 /**
  * @brief Entry point for the TCP client application.
  *
@@ -23,6 +27,7 @@
  * @return 0 on success, 1 on failure.
  */
 int main(int argc, char *argv[]) {
+    log_info("Version: %s\n", VERSION);
     int sockfd;
     int status;
     struct sockaddr_in addr;
