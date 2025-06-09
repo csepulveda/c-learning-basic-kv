@@ -82,6 +82,19 @@ int send_command(int sockfd, const char *command) {
     return (int)bytes_sent;
 }
 
+static bool process_response_line(const char *line, bool *first_line) {
+    if (strcmp(line, "END") == 0) {
+        return true;
+    }
+
+    if (*first_line && strncmp(line, "RESPONSE", 8) == 0) {
+    } else {
+        printf("%s\n", line);
+    }
+
+    *first_line = false;
+    return false;
+}
 
 void read_response(int sockfd) {
     ssize_t status_r;
@@ -97,19 +110,8 @@ void read_response(int sockfd) {
         for (int i = 0; i < status_r; i++) {
             if (buffer[i] == '\n') {
                 line_buffer[line_pos] = '\0';
-
-                if (strcmp(line_buffer, "END") == 0) {
-                    found_end = true;
-                    break;
-                }
-
-                if (first_line && strncmp(line_buffer, "RESPONSE", 8) == 0) {
-                    // skip header
-                } else {
-                    printf("%s\n", line_buffer);
-                }
-
-                first_line = false;
+                found_end = process_response_line(line_buffer, &first_line);
+                if (found_end) break;
                 line_pos = 0;
             } else if (line_pos < sizeof(line_buffer) - 1) {
                 line_buffer[line_pos++] = buffer[i];
