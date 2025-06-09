@@ -36,7 +36,7 @@ void send_response_footer(int clientfd) {
 void send_error_response(int clientfd, int res) {
     send_response_header(clientfd, "ERROR");
 
-    const char *msg = ERR_INTERNAL_ERROR; // default fallback
+    const char *msg;
 
     switch (res) {
         case EXTRACT_ERR_KEY_TOO_LONG:
@@ -237,7 +237,8 @@ void cmd_mget(int clientfd, const char *buffer) {
 
     int index = 1;
     while (token != NULL) {
-        const char *val = kv_get(token);
+        const char *key = token;
+        const char *val = kv_get(key);
 
         char line[BUFFER_SIZE];
         int len = (val && val[0] != '\0')
