@@ -24,7 +24,6 @@ static command_entry_t command_table[] = {
 
 void send_response_header(int clientfd, const char *type) {
     char header[BUFFER_SIZE];
-    snprintf(header, sizeof(header), "RESPONSE %s\n", type);
     int len = snprintf(header, sizeof(header), "RESPONSE %s\n", type);
     send(clientfd, header, len, 0);
 }
