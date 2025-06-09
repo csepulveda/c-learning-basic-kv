@@ -129,17 +129,17 @@ echo "Testing raw server with nc..."
 
 
 # Raw test: SET via nc
-echo -ne "SET nc_test 42\n" | nc 127.0.0.1 8080 > nc_out.txt
+echo -ne "SET nc_test 42\n" | nc -w1 127.0.0.1 8080 > nc_out.txt
 assert_contains "$(cat nc_out.txt)" "RESPONSE OK STRING" "NC SET failed"
 assert_contains "$(cat nc_out.txt)" "OK" "NC SET failed (OK line)"
 
 # Raw test: GET via nc
-echo -ne "GET nc_test\n" | nc 127.0.0.1 8080 > nc_out.txt
+echo -ne "GET nc_test\n" | nc -w1 127.0.0.1 8080 > nc_out.txt
 assert_contains "$(cat nc_out.txt)" "RESPONSE OK STRING" "NC GET failed"
 assert_contains "$(cat nc_out.txt)" "42" "NC GET failed (value)"
 
 # Raw test: MGET via nc
-echo -ne "MGET nc_test unknown\n" | nc 127.0.0.1 8080 > nc_out.txt
+echo -ne "MGET nc_test unknown\n" | nc -w1 127.0.0.1 8080 > nc_out.txt
 assert_contains "$(cat nc_out.txt)" "1) 42" "NC MGET failed (existing key)"
 assert_contains "$(cat nc_out.txt)" "2) (nil)" "NC MGET failed (missing key)"
 
