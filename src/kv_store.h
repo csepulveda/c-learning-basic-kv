@@ -1,9 +1,16 @@
 #ifndef KV_STORE_H
 #define KV_STORE_H
 
-#define MAX_KV_PAIRS 100
+#define HASH_TABLE_SIZE 256 
 #define MAX_KEY_LEN 32
+#define MAX_KV_PAIRS 100
 #define MAX_VAL_LEN 128
+
+typedef struct kv_node {
+    char key[MAX_KEY_LEN];
+    char value[MAX_VAL_LEN];
+    struct kv_node* next;
+} kv_node;
 
 typedef struct {
     char key[MAX_KEY_LEN];
