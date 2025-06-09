@@ -225,23 +225,24 @@ void cmd_mset(int clientfd, const char *buffer) {
 
 void cmd_mget(int clientfd, const char *buffer) {
     char copy[BUFFER_SIZE];
-    char *saveptr;
     snprintf(copy, sizeof(copy), "%s", buffer);
 
     char *newline = strchr(copy, '\n');
     if (newline) *newline = '\0';
 
+    char *saveptr = NULL;
     char *token = strtok_r(copy + 5, " ", &saveptr);
 
     send_response_header(clientfd, "OK MULTI");
 
     int index = 1;
-    while (token) {
-        char line[BUFFER_SIZE];
+    while (token != NULL) {
         const char *val = kv_get(token);
 
-        int len = snprintf(line, sizeof(line), "%d) %s\n", index, 
-                           (val != NULL && val[0] != '\0') ? val : "(nil)");
+        char line[BUFFER_SIZE];
+        int len = (val && val[0] != '\0')
+            ? snprintf(line, sizeof(line), "%d) %s\n", index, val)
+            : snprintf(line, sizeof(line), "%d) (nil)\n", index);
 
         send(clientfd, line, len, 0);
 
