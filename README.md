@@ -8,9 +8,11 @@ The project supports basic commands similar to Redis:
 
 - `PING` — respond with `PONG`
 - `TIME` — return current server time
-- `SET key=value` — store a key-value pair
+- `SET key value` — store a key-value pair
 - `GET key` — retrieve the value of a key
 - `DEL key` — delete a key
+- `MSET key1 value1 key2 value2 ...` — store multiple key-value pairs
+- `MGET key1 key2 ...` — retrieve values of multiple keys
 
 ## Project Structure
 
@@ -44,6 +46,8 @@ In another terminal, run the client:
 ./bin/client SET foo bar
 ./bin/client GET foo
 ./bin/client DEL foo
+./bin/client MSET key1 value1 key2 value2
+./bin/client MGET key1 key2
 ./bin/client TIME
 ```
 
@@ -53,6 +57,11 @@ Run unit tests:
 
 ```bash
 make test
+```
+
+Run Integration tests:
+```bash
+make integration-test
 ```
 
 ## Notes
