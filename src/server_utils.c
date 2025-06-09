@@ -32,11 +32,14 @@ void dispatch_command(int clientfd, const char *buffer) {
         case CMD_GET:
             handle_command(clientfd, CMD_GET, buffer);
             break;
+        case CMD_MSET:
+            handle_command(clientfd, CMD_MSET, buffer);
+            break;
+        case CMD_MGET:
+            handle_command(clientfd, CMD_MGET, buffer);
+            break;
         case CMD_DEL:
             handle_command(clientfd, CMD_DEL, buffer);
-            break;
-        case CMD_GOODBYE:
-            handle_command(clientfd, CMD_GOODBYE, "");
             break;
         case CMD_UNKNOWN:
         default:

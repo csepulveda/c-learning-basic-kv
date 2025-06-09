@@ -54,13 +54,13 @@ int main(int argc, char *argv[]) {
 
     // Line command mode
     if (argc > 1) {
-
         char command[BUFFER_SIZE] = {0};
         if (build_command_string(argc, argv, command, sizeof(command)) != 0) {
             log_error("Failed to construct command\n");
             close(sockfd);
             return 1;
         }
+
         command_t cmd = parse_command(command);
         if (cmd == CMD_UNKNOWN) {
             char command_name[64];
@@ -77,9 +77,39 @@ int main(int argc, char *argv[]) {
         }
 
         send_command(sockfd, command);
-        memset(buffer, 0, sizeof(buffer));
-        recv(sockfd, buffer, sizeof(buffer), 0);
-        printf("Response: %s", buffer);
+
+        // Robust recv loop with header skipping
+        bool found_end = false;
+        bool first_line = true;
+        while ((status_r = recv(sockfd, buffer, sizeof(buffer) - 1, 0)) > 0) {
+            buffer[status_r] = '\0';
+
+            char *p = buffer;
+            while (p) {
+                char *next_line = strchr(p, '\n');
+                if (next_line) {
+                    *next_line = '\0';
+                    next_line++;
+                }
+
+                if (strcmp(p, "END") == 0) {
+                    found_end = true;
+                    break;
+                }
+
+                if (first_line && strncmp(p, "RESPONSE", 8) == 0) {
+                    // skip header
+                } else {
+                    printf("%s\n", p);
+                }
+
+                first_line = false;
+                p = next_line;
+            }
+
+            if (found_end) break;
+        }
+
         close(sockfd);
         return 0;
     }
@@ -99,12 +129,39 @@ int main(int argc, char *argv[]) {
 
         send_command(sockfd, buffer);
 
-        memset(buffer, 0, sizeof(buffer));
-        status_r = recv(sockfd, buffer, sizeof(buffer), 0);
+        // Robust recv loop with header skipping
+        bool found_end = false;
+        bool first_line = true;
+        while ((status_r = recv(sockfd, buffer, sizeof(buffer) - 1, 0)) > 0) {
+            buffer[status_r] = '\0';
 
-        if (status_r > 0) {
-            printf("Server: %s", buffer);
-        } else {
+            char *p = buffer;
+            while (p) {
+                char *next_line = strchr(p, '\n');
+                if (next_line) {
+                    *next_line = '\0';
+                    next_line++;
+                }
+
+                if (strcmp(p, "END") == 0) {
+                    found_end = true;
+                    break;
+                }
+
+                if (first_line && strncmp(p, "RESPONSE", 8) == 0) {
+                    // skip header
+                } else {
+                    printf("%s\n", p);
+                }
+
+                first_line = false;
+                p = next_line;
+            }
+
+            if (found_end) break;
+        }
+
+        if (status_r <= 0) {
             perror("recv");
             log_error(ERR_INTERNAL_ERROR);
             running = false;

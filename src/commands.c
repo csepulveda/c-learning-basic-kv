@@ -14,13 +14,23 @@
 static command_entry_t command_table[] = {
     { CMD_PING,    cmd_ping },
     { CMD_TIME,    cmd_time },
-    { CMD_GOODBYE, cmd_goodbye },
     { CMD_SET,     cmd_set },
     { CMD_GET,     cmd_get },
+    { CMD_MSET,    cmd_mset },
+    { CMD_MGET,    cmd_mget },
     { CMD_DEL,     cmd_del },
     { CMD_UNKNOWN, NULL }  // Sentinel
 };
 
+void send_response_header(int clientfd, const char *type) {
+    char header[BUFFER_SIZE];
+    snprintf(header, sizeof(header), "RESPONSE %s\n", type);
+    send(clientfd, header, strlen(header), 0);
+}
+
+void send_response_footer(int clientfd) {
+    send(clientfd, "END\n", 4, 0);
+}
 
 void handle_command(int clientfd, command_t cmd, const char *message) {
     for (int i = 0; command_table[i].proc != NULL; i++) {
@@ -31,44 +41,43 @@ void handle_command(int clientfd, command_t cmd, const char *message) {
     }
 }
 
-/**
- * @brief Sends the current server time to the client.
- *
- * Formats the current system time as a human-readable string and transmits it to the connected client.
- */
- void cmd_ping(int clientfd, const char *message) {
+void cmd_ping(int clientfd, const char *message) {
     (void)message;
+    send_response_header(clientfd, "OK STRING");
+
     const char *response = "PONG\n";
-    send(clientfd, response, strlen(response), 0); //NOSONAR
+    send(clientfd, response, strlen(response), 0);
+
+    send_response_footer(clientfd);
 }
 
- void cmd_time(int clientfd, const char *message) {
+void cmd_time(int clientfd, const char *message) {
     (void)message;
+    send_response_header(clientfd, "OK STRING");
+
     time_t now = time(NULL);
     char timestr[BUFFER_SIZE];
     ctime_r(&now, timestr);
-    send(clientfd, timestr, sizeof(timestr) -1 , 0);
+    send(clientfd, timestr, strlen(timestr), 0);
+
+    send_response_footer(clientfd);
 }
 
- void cmd_goodbye(int clientfd, const char *message) {
-    (void)message;
-    const char *response = "Goodbye!\n";
-    send(clientfd, response, strlen(response), 0); //NOSONAR
-    close(clientfd);
-}
-
- void cmd_set(int clientfd, const char *buffer) {
+void cmd_set(int clientfd, const char *buffer) {
     char key[MAX_KEY_LEN];
     char value[MAX_VAL_LEN];
     int res = extract_key_value(buffer, key, value, sizeof(key), sizeof(value));
 
     if (res == EXTRACT_OK) {
         if (kv_set(key, value) == 0) {
+            send_response_header(clientfd, "OK STRING");
             send(clientfd, "OK\n", 3, 0);
         } else {
+            send_response_header(clientfd, "ERROR");
             send(clientfd, ERR_INTERNAL_ERROR, strlen(ERR_INTERNAL_ERROR), 0);
         }
     } else {
+        send_response_header(clientfd, "ERROR");
         switch (res) {
             case EXTRACT_ERR_KEY_TOO_LONG:
                 send(clientfd, ERR_KEY_TOO_LONG, strlen(ERR_KEY_TOO_LONG), 0);
@@ -81,38 +90,120 @@ void handle_command(int clientfd, command_t cmd, const char *message) {
                 break;
         }
     }
+
+    send_response_footer(clientfd);
 }
 
- void cmd_get(int clientfd, const char *buffer) {
+void cmd_get(int clientfd, const char *buffer) {
     char key[MAX_KEY_LEN];
     if (extract_key(buffer, key, sizeof(key)) == 0) {
         const char *val = kv_get(key);
+        send_response_header(clientfd, "OK STRING");
+
         if (val) {
-	    size_t len = strnlen(val, MAX_VAL_LEN);
+            size_t len = strnlen(val, MAX_VAL_LEN);
             send(clientfd, val, len, 0);
             send(clientfd, "\n", 1, 0);
         } else {
             send(clientfd, ERR_NOT_FOUND, strlen(ERR_NOT_FOUND), 0);
         }
     } else {
+        send_response_header(clientfd, "ERROR");
         send(clientfd, ERR_PARSE_ERROR, strlen(ERR_PARSE_ERROR), 0);
     }
+
+    send_response_footer(clientfd);
 }
 
-/**
- * @brief Handles a delete command from the client to remove a key from the key-value store.
- *
- * Parses the key from the input buffer and attempts to delete it from the store. Sends "DELETED" if successful, "NOT FOUND" if the key does not exist, or "ERROR" if the key could not be parsed.
- */
- void cmd_del(int clientfd, const char *buffer) {
+void cmd_del(int clientfd, const char *buffer) {
     char key[MAX_KEY_LEN];
-    if (extract_key(buffer, key, sizeof(key)) == 0) { 
+    if (extract_key(buffer, key, sizeof(key)) == 0) {
+        send_response_header(clientfd, "OK STRING");
+
         if (kv_delete(key) == 0) {
             send(clientfd, "DELETED\n", 8, 0);
         } else {
             send(clientfd, ERR_NOT_FOUND, strlen(ERR_NOT_FOUND), 0);
         }
     } else {
+        send_response_header(clientfd, "ERROR");
         send(clientfd, ERR_PARSE_ERROR, strlen(ERR_PARSE_ERROR), 0);
     }
+
+    send_response_footer(clientfd);
+}
+
+void cmd_mset(int clientfd, const char *buffer) {
+    char copy[BUFFER_SIZE];
+    snprintf(copy, sizeof(copy), "%s", buffer);
+
+    char *token = strtok(copy + 5, " \n"); // skip "MSET "
+
+    while (token) {
+        char *key = token;
+        token = strtok(NULL, " \n");
+        if (!token) {
+            send_response_header(clientfd, "ERROR");
+            send(clientfd, ERR_PARSE_ERROR, strlen(ERR_PARSE_ERROR), 0);
+            send_response_footer(clientfd);
+            return;
+        }
+        char *value = token;
+
+        // Check key/value length
+        if (strlen(key) >= MAX_KEY_LEN - 1) {
+            send_response_header(clientfd, "ERROR");
+            send(clientfd, ERR_KEY_TOO_LONG, strlen(ERR_KEY_TOO_LONG), 0);
+            send_response_footer(clientfd);
+            return;
+        }
+        if (strlen(value) >= MAX_VAL_LEN - 1) {
+            send_response_header(clientfd, "ERROR");
+            send(clientfd, ERR_VALUE_TOO_LONG, strlen(ERR_VALUE_TOO_LONG), 0);
+            send_response_footer(clientfd);
+            return;
+        }
+
+        if (kv_set(key, value) != 0) {
+            send_response_header(clientfd, "ERROR");
+            send(clientfd, ERR_INTERNAL_ERROR, strlen(ERR_INTERNAL_ERROR), 0);
+            send_response_footer(clientfd);
+            return;
+        }
+
+        token = strtok(NULL, " \n");
+    }
+
+    send_response_header(clientfd, "OK STRING");
+    send(clientfd, "OK\n", 3, 0);
+    send_response_footer(clientfd);
+}
+
+void cmd_mget(int clientfd, const char *buffer) {
+    char copy[BUFFER_SIZE];
+    snprintf(copy, sizeof(copy), "%s", buffer);
+
+    char *newline = strchr(copy, '\n');
+    if (newline) *newline = '\0';
+
+    char *token = strtok(copy + 5, " ");
+
+    send_response_header(clientfd, "OK MULTI");
+
+    int index = 1;
+    while (token) {
+        char line[BUFFER_SIZE];
+        const char *val = kv_get(token);
+        if (val) {
+            snprintf(line, sizeof(line), "%d) %s\n", index, val);
+        } else {
+            snprintf(line, sizeof(line), "%d) (nil)\n", index);
+        }
+        send(clientfd, line, strlen(line), 0);
+
+        index++;
+        token = strtok(NULL, " ");
+    }
+
+    send_response_footer(clientfd);
 }
