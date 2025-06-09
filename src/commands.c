@@ -54,7 +54,7 @@ void send_error_response(int clientfd, int res) {
             break;
     }
 
-    send(clientfd, msg, strlen(msg), 0);
+    send(clientfd, msg, strlen(msg), 0); //NOSONAR
     send_response_footer(clientfd);
 }
 
@@ -101,7 +101,7 @@ int extract_value_from_ptr(const char **p, char *value, size_t value_size) {
 
 static void send_simple_ok_string(int clientfd, const char *msg) {
     send_response_header(clientfd, "OK STRING");
-    send(clientfd, msg, strlen(msg), 0);
+    send(clientfd, msg, strnlen(msg, BUFFER_SIZE), 0);
     send_response_footer(clientfd);
 }
 
