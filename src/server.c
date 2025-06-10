@@ -8,10 +8,12 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "kvstore.h"
 #include "logs.h"
 #include "server_utils.h"
+#include "info.h"
 
 #ifndef VERSION
 #define VERSION "dev"
@@ -19,6 +21,7 @@
 
 volatile sig_atomic_t running = 1;
 int serverfd;
+time_t start_time;
 
 /**
  * @brief Handles SIGTERM to gracefully shut down the server.
@@ -43,6 +46,7 @@ void handle_sigterm(int sig) {
  */
 int main() {
     log_info("Version: %s\n", VERSION);
+    start_time = time(NULL);
     kv_init();
     int status;
     int SERVER_PORT = getenv("PORT") ? atoi(getenv("PORT")) : 8080;
