@@ -12,6 +12,6 @@ typedef struct {
     char version[50];
 } server_info_t;
 
-server_info_t get_info(void);
+server_info_t get_info(time_t start_time);
 
 #endif

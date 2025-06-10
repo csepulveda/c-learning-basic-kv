@@ -1,7 +1,9 @@
 #include <string.h>
 #include <time.h>
+#include <sys/resource.h>
 
 #include "info.h"
+#include "kvstore.h"
 
 #ifndef VERSION
 #define VERSION "dev"
@@ -16,9 +18,20 @@ server_info_t fill_data(int mem, int keys, long uptime, const char *version) {
     return r;
 }
 
-server_info_t get_info(void) {
+server_info_t get_info(time_t start_time) {
     time_t now = time(NULL);
     long uptime = now - start_time;
-    server_info_t r = fill_data(30, 150, uptime, VERSION);
-    return r;
+
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+
+    int mem_mb = 0;
+#if defined(__APPLE__)
+    mem_mb = (int)(usage.ru_maxrss / 1024 / 1024);
+#else
+    mem_mb = (int)(usage.ru_maxrss / 1024);
+#endif
+
+    int keys = kv_count_keys();
+    return fill_data(mem_mb, keys, uptime, VERSION);
 }

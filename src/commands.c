@@ -260,17 +260,19 @@ void cmd_info(int clientfd, const char *message) {
     char version[80];
     char uptime[80];
     char memory[80];
+    char keys[80];
 
     send_response_header(clientfd, "OK STRING");
 
-    server_info_t inf = get_info();
-    sprintf(memory, "Memory: %d mb\n", inf.mem);
+    server_info_t inf = get_info(start_time);
     sprintf(uptime, "Uptime: %ld s\n", inf.uptime);
+    sprintf(memory, "Memory: %d mb\n", inf.mem);
+    sprintf(keys, "Keys: %d\n", inf.keys);
     sprintf(version, "Version: %s\n", inf.version);
 
-
-    send(clientfd, memory, strlen(memory), 0);
     send(clientfd, uptime, strlen(uptime), 0);
+    send(clientfd, memory, strlen(memory), 0);
+    send(clientfd, keys, strlen(keys), 0);
     send(clientfd, version, strlen(version), 0);
     send_response_footer(clientfd);
 }

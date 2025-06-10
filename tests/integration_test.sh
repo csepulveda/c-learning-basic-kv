@@ -61,6 +61,13 @@ assert_contains "$output" "Invalid command: INVALID" "Invalid command did not re
 output=$(HOST=127.0.0.1 PORT=8080 $CLIENT_BIN "SET test 123")
 assert_contains "$output" "OK" "SET did not return OK"
 
+# Test INFO
+output=$($CLIENT_BIN "INFO")
+assert_contains "$output" "Uptime:" "INFO did not return uptime"
+assert_contains "$output" "Memory:" "INFO did not return memory"
+assert_contains "$output" "Keys:" "INFO did not return keys"
+assert_contains "$output" "Version:" "INFO did not return version"
+
 # Test interactive mode
 $CLIENT_BIN <<EOF | grep -q "OK" || fail "Interactive SET failed"
 SET interactive 123
