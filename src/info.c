@@ -19,9 +19,9 @@ server_info_t fill_data(int mem, int keys, long uptime, const char *version) {
     return r;
 }
 
-server_info_t get_info(time_t start_time) {
+server_info_t get_info(time_t server_start_time) {
     time_t now = time(NULL);
-    long uptime = now - start_time;
+    long uptime = now - server_start_time;
 
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
