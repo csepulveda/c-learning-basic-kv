@@ -9,6 +9,7 @@
 typedef enum {
     CMD_PING,
     CMD_TIME,
+    CMD_INFO,
     CMD_SET,
     CMD_GET,
     CMD_DEL,

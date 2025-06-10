@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "../src/commands.h"
 #include "../src/kvstore.h"
@@ -10,6 +11,7 @@
 #include "../src/errors.h"
 
 #define BUF_SIZE 1024
+time_t start_time = 0;
 
 void recv_until_end(int fd, char *buf, size_t buf_size) {
     size_t total_read = 0;
@@ -86,6 +88,26 @@ void test_send_error_response(int error_code, const char *expected_msg) {
     close(fds[1]);
 }
 
+void test_cmd_info() {
+    int fds[2];
+    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+
+    cmd_info(fds[1], "");
+
+    char buf[BUF_SIZE];
+    recv_until_end(fds[0], buf, sizeof(buf));
+
+    printf("cmd_info() -> '%s'\n", buf);
+
+    assert(response_contains(buf, "Uptime:"));
+    assert(response_contains(buf, "Memory:"));
+    assert(response_contains(buf, "Keys:"));
+    assert(response_contains(buf, "Version:"));
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
 int main() {
     // Test OK
     test_cmd_set("SET foo bar\n", "OK");
@@ -114,6 +136,10 @@ int main() {
     test_send_error_response(EXTRACT_ERR_KEY_TOO_LONG, ERR_KEY_TOO_LONG);
     test_send_error_response(EXTRACT_ERR_VALUE_TOO_LONG, ERR_VALUE_TOO_LONG);
     test_send_error_response(EXTRACT_ERR_KEY_NOT_FOUND, ERR_NOT_FOUND);
+
+    // Test INFO
+    test_cmd_info();
+
     
     printf("✅ All cmd_set tests passed!\n");
     return 0;

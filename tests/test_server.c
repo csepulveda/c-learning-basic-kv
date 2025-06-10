@@ -4,11 +4,15 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "../src/server_utils.h"
 #include "../src/errors.h"
+#include "../src/kvstore.h"
 
 #define BUF_SIZE 1024
+
+time_t start_time;
 
 void recv_until_end(int fd, char *buf, size_t buf_size) {
     size_t total_read = 0;
@@ -92,6 +96,7 @@ void test_handle_client(const char *cmd, const char *expected_resp) {
  * @brief Runs all server command and client handler tests.
  */
 int main() {
+    start_time = time(NULL);
     test_dispatch_command("PING\n", "PONG");
     test_dispatch_command("SET test test1\n", "OK");
     test_dispatch_command("GET test\n", "test1");

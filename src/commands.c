@@ -8,6 +8,7 @@
 #include "kvstore.h"
 #include "protocol.h"
 #include "errors.h"
+#include "info.h"
 
 #define BUFFER_SIZE 1024
 
@@ -19,6 +20,7 @@ static command_entry_t command_table[] = {
     { CMD_MSET,    cmd_mset },
     { CMD_MGET,    cmd_mget },
     { CMD_DEL,     cmd_del },
+    { CMD_INFO,    cmd_info },
     { CMD_UNKNOWN, NULL }  // Sentinel
 };
 
@@ -252,3 +254,26 @@ void cmd_mget(int clientfd, const char *buffer) {
 
     send_response_footer(clientfd);
 }
+
+void cmd_info(int clientfd, const char *message) {
+    (void)message;
+    char version[80];
+    char uptime[80];
+    char memory[80];
+    char keys[80];
+
+    send_response_header(clientfd, "OK STRING");
+
+    server_info_t inf = get_info(start_time);
+    snprintf(uptime, sizeof(uptime), "Uptime: %ld s\n", inf.uptime);
+    snprintf(memory, sizeof(memory), "Memory: %d mb\n", inf.mem);
+    snprintf(keys, sizeof(keys), "Keys: %d\n", inf.keys);
+    snprintf(version, sizeof(version), "Version: %s\n", inf.version);
+
+    send(clientfd, uptime, strlen(uptime), 0); //NOSONAR
+    send(clientfd, memory, strlen(memory), 0); //NOSONAR
+    send(clientfd, keys, strlen(keys), 0); //NOSONAR
+    send(clientfd, version, strlen(version), 0); //NOSONAR
+    send_response_footer(clientfd);
+}
+

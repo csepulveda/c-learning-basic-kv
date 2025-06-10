@@ -5,6 +5,8 @@
 #define MAX_KEY_LEN 32
 #define MAX_VAL_LEN 128
 
+int kv_count_keys(void);
+
 typedef struct kv_node {
     char key[MAX_KEY_LEN];
     char value[MAX_VAL_LEN];

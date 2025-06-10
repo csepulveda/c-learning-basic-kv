@@ -6,6 +6,18 @@
 
 static kv_node* hash_table[HASH_TABLE_SIZE];
 
+int kv_count_keys(void) {
+    int count = 0;
+    for (int i = 0; i < HASH_TABLE_SIZE; i++) {
+        kv_node* node = hash_table[i];
+        while (node != NULL) {
+            count++;
+            node = node->next;
+        }
+    }
+    return count;
+}
+
 static unsigned int hash(const char* key) {
     unsigned int hash = 5381;
     int c;

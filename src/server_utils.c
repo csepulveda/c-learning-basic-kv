@@ -38,6 +38,9 @@ void dispatch_command(int clientfd, const char *buffer) {
         case CMD_MGET:
             handle_command(clientfd, CMD_MGET, buffer);
             break;
+        case CMD_INFO:
+            handle_command(clientfd, CMD_INFO, "");
+            break;
         case CMD_DEL:
             handle_command(clientfd, CMD_DEL, buffer);
             break;

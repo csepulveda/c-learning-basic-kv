@@ -22,7 +22,9 @@ command_t parse_command(const char *message) {
     if (strncmp(message, "MSET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_MSET;
     if (strncmp(message, "MGET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_MGET;
 
+
     if (strncmp(message, "PING", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_PING;
+    if (strncmp(message, "INFO", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_INFO;
     if (strncmp(message, "TIME", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_TIME;
     
     return CMD_UNKNOWN;
