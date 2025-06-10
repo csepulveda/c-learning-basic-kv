@@ -14,7 +14,8 @@ server_info_t fill_data(int mem, int keys, long uptime, const char *version) {
     r.mem = mem;
     r.keys = keys;
     r.uptime = uptime;
-    strncpy(r.version, version, strlen(version));
+    strncpy(r.version, version, sizeof(r.version) - 1);
+    r.version[sizeof(r.version) - 1] = '\0';
     return r;
 }
 
