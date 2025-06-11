@@ -216,6 +216,14 @@ assert_contains "$output" "5" "HINCRBY new field did not return 5"
 output=$($CLIENT_BIN "HINCRBY myhash counter 3")
 assert_contains "$output" "8" "HINCRBY existing field did not return 8"
 
+# Test HINCRBY on new key  (should create and increment)
+output=$($CLIENT_BIN "HINCRBY newhash counter 5")
+assert_contains "$output" "5" "HINCRBY new field did not return 5"
+
+# Test HINCRBY on existing field (increment further)
+output=$($CLIENT_BIN "HINCRBY newhash counter 1000")
+assert_contains "$output" "1005" "HINCRBY existing field did not return 1005"
+
 # Test GET or SET on hash key should fail with parse error
 output=$($CLIENT_BIN "GET myhash")
 assert_contains "$output" "ERROR not found" "GET on hash key did not fail with not found error"
