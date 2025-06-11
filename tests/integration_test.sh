@@ -157,6 +157,15 @@ echo "$output" | grep -q "1) val 1" || fail "MGET did not return val 1"
 echo "$output" | grep -q "2) val 2" || fail "MGET did not return val 2"
 echo "$output" | grep -q "3) val 3" || fail "MGET did not return val 3"
 
+# Test TYPE existing key
+$CLIENT_BIN "SET type_test abc" > /dev/null
+output=$($CLIENT_BIN "TYPE type_test")
+assert_contains "$output" "string" "TYPE existing key did not return string"
+
+# Test TYPE missing key
+output=$($CLIENT_BIN "TYPE missing_type_key")
+assert_contains "$output" "(nil)" "TYPE missing key did not return (nil)"
+
 # Shutdown server
 kill $SERVER_PID
 wait $SERVER_PID

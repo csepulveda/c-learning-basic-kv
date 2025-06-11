@@ -19,6 +19,7 @@ void cmd_del(int clientfd, const char *buffer);
 void cmd_ping(int clientfd, const char *message);
 void cmd_time(int clientfd, const char *message);
 void cmd_info(int clientfd, const char *buffer);
+void cmd_type(int clientfd, const char *message);
 
 void send_response_header(int clientfd, const char *type);
 void send_response_footer(int clientfd);

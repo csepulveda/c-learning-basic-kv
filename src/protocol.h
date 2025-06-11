@@ -15,6 +15,7 @@ typedef enum {
     CMD_DEL,
     CMD_MSET,
     CMD_MGET,
+    CMD_TYPE,
     CMD_UNKNOWN = -1
 } command_t;
 

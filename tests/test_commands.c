@@ -108,6 +108,34 @@ void test_cmd_info() {
     close(fds[1]);
 }
 
+void test_cmd_type() {
+    int fds[2];
+    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+
+    // Setup: SET a key
+    kv_init();
+    kv_set("foo", "bar");
+
+    // Test TYPE existing key
+    cmd_type(fds[1], "TYPE foo");
+    char buf[BUF_SIZE];
+    recv_until_end(fds[0], buf, sizeof(buf));
+    printf("cmd_type() existing key -> '%s'\n", buf);
+    assert(response_contains(buf, "string"));
+
+    // Test TYPE missing key
+    cmd_type(fds[1], "TYPE missing_key");
+    memset(buf, 0, sizeof(buf));
+    recv_until_end(fds[0], buf, sizeof(buf));
+    printf("cmd_type() missing key -> '%s'\n", buf);
+
+    // Make the test more robust
+    assert(strstr(buf, "(nil)") != NULL);
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
 int main() {
     // Test OK
     test_cmd_set("SET foo bar\n", "OK");
@@ -140,7 +168,9 @@ int main() {
     // Test INFO
     test_cmd_info();
 
-    
+    // Test TYPE
+    test_cmd_type();
+
     printf("✅ All cmd_set tests passed!\n");
     return 0;
 }
