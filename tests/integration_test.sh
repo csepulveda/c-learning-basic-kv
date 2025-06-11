@@ -31,6 +31,9 @@ assert_contains() {
 
 # -------- TEST CASES DEFINITION --------
 
+VERY_LONG_KEY=$(head -c 300 < /dev/zero | tr '\0' 'A')
+VERY_LONG_VALUE=$(head -c 1025 < /dev/zero | tr '\0' 'B')
+
 test_cases=(
     'SET test 123 | OK | SET did not return OK'
     'GET test | 123 | GET did not return 123'
@@ -77,6 +80,8 @@ test_cases=(
     'DEL newhash | DELETED | DEL newhash after HINCRBY did not return DELETED'
     'GET myhash | not found | GET on hash key did not return not found'
     'SET myhash fail | ERROR parse error | SET on hash key did not return parse error'
+    "SET $VERY_LONG_KEY value | ERROR | SET with very long key did not return ERROR"
+    "SET test $VERY_LONG_VALUE | ERROR | SET with very long value did not return ERROR"
 )
 
 # -------- TEST RUNNERS --------
@@ -92,7 +97,8 @@ run_cmd_tests() {
         echo "👉 CMD: $cmd → expecting: '$expected'"
 
         read -ra tokens <<< "$cmd"
-        output=$($CLIENT_BIN "${tokens[@]}")
+        output=$($CLIENT_BIN "${tokens[@]}" 2>&1)
+        echo "Output: $output"
         assert_contains "$output" "$expected" "$desc (client cmd)"
 
     done
@@ -114,6 +120,10 @@ run_nc_tests() {
     done
 }
 
+SKIP_INTERACTIVE_FOR=(
+    "SET test $VERY_LONG_VALUE"
+)
+
 run_interactive_tests() {
     echo "🔷 Running INTERACTIVE tests..."
     for entry in "${test_cases[@]}"; do
@@ -121,6 +131,18 @@ run_interactive_tests() {
         cmd=$(echo "$cmd" | xargs)
         expected=$(echo "$expected" | xargs)
         desc=$(echo "$desc" | xargs)
+
+        skip=false
+        for skip_cmd in "${SKIP_INTERACTIVE_FOR[@]}"; do
+            if [[ "$cmd" == "$skip_cmd" ]]; then
+                echo "⚠️  Skipping interactive for: $cmd"
+                skip=true
+                break
+            fi
+        done
+        if $skip; then
+            continue
+        fi
 
         echo "👉 INTERACTIVE: $cmd → expecting: '$expected'"
 
