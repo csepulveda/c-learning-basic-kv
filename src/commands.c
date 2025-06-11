@@ -21,6 +21,7 @@ static command_entry_t command_table[] = {
     { CMD_MGET,    cmd_mget },
     { CMD_DEL,     cmd_del },
     { CMD_INFO,    cmd_info },
+    { CMD_TYPE,    cmd_type },
     { CMD_UNKNOWN, NULL }  // Sentinel
 };
 
@@ -277,3 +278,24 @@ void cmd_info(int clientfd, const char *message) {
     send_response_footer(clientfd);
 }
 
+void cmd_type(int clientfd, const char *buffer) {
+    char key[MAX_KEY_LEN];
+    if (extract_key(buffer, key, sizeof(key)) != 0) {
+        send_error_response(clientfd, EXTRACT_ERR_PARSE);
+        return;
+    }
+
+    const char *val = kv_get(key);
+
+    send_response_header(clientfd, "OK STRING");
+
+    if (val) {
+        const char *type_str = "string\n";
+        send(clientfd, type_str, strlen(type_str), 0);
+    } else {
+        const char *nil_str = "(nil)\n";
+        send(clientfd, nil_str, strlen(nil_str), 0);
+    }
+
+    send_response_footer(clientfd);
+}

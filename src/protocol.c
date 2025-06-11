@@ -24,6 +24,7 @@ command_t parse_command(const char *message) {
 
 
     if (strncmp(message, "PING", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_PING;
+    if (strncmp(message, "TYPE", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_TYPE;
     if (strncmp(message, "INFO", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_INFO;
     if (strncmp(message, "TIME", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_TIME;
     

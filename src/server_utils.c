@@ -44,6 +44,9 @@ void dispatch_command(int clientfd, const char *buffer) {
         case CMD_DEL:
             handle_command(clientfd, CMD_DEL, buffer);
             break;
+        case CMD_TYPE:
+            handle_command(clientfd, CMD_TYPE, buffer);
+            break;
         case CMD_UNKNOWN:
         default:
             send(clientfd, ERR_UNKNOWN_CMD, strlen(ERR_UNKNOWN_CMD), 0); 
