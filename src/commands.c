@@ -66,46 +66,52 @@ void send_error_response(int clientfd, int res) {
 }
 
 int extract_key_field(const char *message, char *key, size_t key_size, char *field, size_t field_size) {
-    const char *space1 = strchr(message, ' ');
-    if (!space1) return EXTRACT_ERR_PARSE;
+    const char *p = message;
 
-    const char *space2 = strchr(space1 + 1, ' ');
-    if (!space2) return EXTRACT_ERR_PARSE;
+    // Skip command word
+    while (*p != ' ' && *p != '\0' && *p != '\n') p++;
+    if (*p == '\0' || *p == '\n') return EXTRACT_ERR_PARSE;
+    while (*p == ' ') p++;
 
     // Extract key
-    size_t key_len = space2 - (space1 + 1);
-    if (key_len >= key_size) return EXTRACT_ERR_KEY_TOO_LONG;
-
-    memcpy(key, space1 + 1, key_len);
-    key[key_len] = '\0';
-
-    // Skip spaces after key
-    const char *field_start = space2 + 1;
-    while (*field_start == ' ') field_start++;
-    if (*field_start == '\0') return EXTRACT_ERR_PARSE;
+    int res = extract_key_from_ptr(&p, key, key_size);
+    if (res != EXTRACT_OK) return res;
 
     // Extract field
-    const char *newline = strchr(field_start, '\n');
-    size_t field_len = newline ? (size_t)(newline - field_start) : strnlen(field_start, field_size);
-    if (field_len >= field_size) return EXTRACT_ERR_KEY_TOO_LONG;
-
-    memcpy(field, field_start, field_len);
-    field[field_len] = '\0';
+    res = extract_key_from_ptr(&p, field, field_size);
+    if (res != EXTRACT_OK) return res;
 
     return EXTRACT_OK;
 }
 
 int extract_key_from_ptr(const char **p, char *key, size_t key_size) {
-    const char *key_start = *p;
-    while (**p != ' ' && **p != '\0' && **p != '\n') (*p)++;
-    size_t key_len = *p - key_start;
-    if (key_len >= key_size) return EXTRACT_ERR_KEY_TOO_LONG;
-    memcpy(key, key_start, key_len);
-    key[key_len] = '\0';
+    while (**p == ' ') (*p)++;
+
+    if (**p == '"') {
+        // parse quoted token
+        (*p)++; // skip opening quote
+        const char *key_start = *p;
+        const char *quote_end = strchr(*p, '"');
+        if (!quote_end) return EXTRACT_ERR_PARSE;
+
+        size_t key_len = quote_end - key_start;
+        if (key_len >= key_size) return EXTRACT_ERR_KEY_TOO_LONG;
+
+        memcpy(key, key_start, key_len);
+        key[key_len] = '\0';
+        *p = quote_end + 1; // skip closing quote
+    } else {
+        // unquoted token
+        const char *key_start = *p;
+        while (**p != ' ' && **p != '\0' && **p != '\n') (*p)++;
+        size_t key_len = *p - key_start;
+        if (key_len >= key_size) return EXTRACT_ERR_KEY_TOO_LONG;
+
+        memcpy(key, key_start, key_len);
+        key[key_len] = '\0';
+    }
 
     while (**p == ' ') (*p)++;
-    if (**p == '\0' || **p == '\n') return EXTRACT_ERR_PARSE;
-
     return EXTRACT_OK;
 }
 
@@ -132,6 +138,7 @@ int extract_value_from_ptr(const char **p, char *value, size_t value_size) {
         value[value_len] = '\0';
     }
 
+    // Aquí el fix → para que p no quede mal posicionada
     while (**p == ' ') (*p)++;
     return EXTRACT_OK;
 }
@@ -356,7 +363,7 @@ void cmd_hset(int clientfd, const char *buffer) {
         char field[MAX_KEY_LEN];
         char value[MAX_VAL_LEN];
 
-        int field_res = extract_key_from_ptr(&p, field, MAX_KEY_LEN);
+        int field_res = extract_key_from_ptr(&p, field, MAX_KEY_LEN);  // CORRECTO: usar extract_key_from_ptr aquí
         if (field_res != EXTRACT_OK) {
             send_error_response(clientfd, field_res);
             return;
@@ -423,18 +430,11 @@ void cmd_hmget(int clientfd, const char *buffer) {
 
     // Manually parse key
     char key[MAX_KEY_LEN];
-    const char *key_start = p;
-    while (*p != ' ' && *p != '\0' && *p != '\n') p++;
-    size_t key_len = p - key_start;
-    if (key_len == 0 || key_len >= MAX_KEY_LEN) {
-        send_error_response(clientfd, EXTRACT_ERR_PARSE);
+    int res = extract_key_from_ptr(&p, key, sizeof(key));
+    if (res != EXTRACT_OK) {
+        send_error_response(clientfd, res);
         return;
     }
-    memcpy(key, key_start, key_len);
-    key[key_len] = '\0';
-
-    // Skip spaces after key
-    while (*p == ' ') p++;
 
     // Parse fields
     const char *fields[64];
@@ -442,21 +442,15 @@ void cmd_hmget(int clientfd, const char *buffer) {
     int field_count = 0;
 
     while (*p != '\0' && *p != '\n') {
-        const char *field_start = p;
-        while (*p != ' ' && *p != '\0' && *p != '\n') p++;
-        size_t field_len = p - field_start;
-        if (field_len == 0 || field_len >= MAX_KEY_LEN) {
-            send_error_response(clientfd, EXTRACT_ERR_PARSE);
+        res = extract_key_from_ptr(&p, fields_storage[field_count], MAX_KEY_LEN);
+        if (res != EXTRACT_OK) {
+            send_error_response(clientfd, res);
             return;
         }
-        memcpy(fields_storage[field_count], field_start, field_len);
-        fields_storage[field_count][field_len] = '\0';
 
         fields[field_count] = fields_storage[field_count];
         field_count++;
 
-        // Skip spaces
-        while (*p == ' ') p++;
         if (field_count >= 64) break;
     }
 

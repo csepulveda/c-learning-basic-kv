@@ -39,6 +39,13 @@ int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_siz
             buffer[offset++] = ' ';
         }
 
+        bool needs_quotes = strchr(word, ' ') != NULL;
+
+        if (needs_quotes) {
+            if (offset + 1 >= buffer_size) return -1;
+            buffer[offset++] = '"';
+        }
+
         if (offset + word_len >= buffer_size) {
             log_error("Command string too long: %s", word);
             return -1;
@@ -46,6 +53,11 @@ int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_siz
 
         memcpy(buffer + offset, word, word_len);
         offset += word_len;
+
+        if (needs_quotes) {
+            if (offset + 1 >= buffer_size) return -1;
+            buffer[offset++] = '"';
+        }
     }
 
     buffer[offset < buffer_size ? offset : buffer_size - 1] = '\0';
