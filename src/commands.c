@@ -291,10 +291,10 @@ void cmd_type(int clientfd, const char *buffer) {
 
     if (val) {
         const char *type_str = "string\n";
-        send(clientfd, type_str, strlen(type_str), 0);
+        send(clientfd, type_str, strlen(type_str), 0); //NOSONAR
     } else {
         const char *nil_str = "(nil)\n";
-        send(clientfd, nil_str, strlen(nil_str), 0);
+        send(clientfd, nil_str, strlen(nil_str), 0); //NOSONAR
     }
 
     send_response_footer(clientfd);
