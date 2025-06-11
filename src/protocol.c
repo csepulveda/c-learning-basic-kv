@@ -19,6 +19,11 @@ command_t parse_command(const char *message) {
     if (strncmp(message, "GET", 3) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[3])) return CMD_GET;
     if (strncmp(message, "DEL", 3) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[3])) return CMD_DEL;
 
+    if (strncmp(message, "HSET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_HSET;
+    if (strncmp(message, "HGET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_HGET;
+    if (strncmp(message, "HMGET", 5) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[5])) return CMD_HMGET;
+    if (strncmp(message, "HINCRBY", 7) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[7])) return CMD_HINCRBY;
+
     if (strncmp(message, "TYPE", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_TYPE;
     if (strncmp(message, "MSET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_MSET;
     if (strncmp(message, "MGET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_MGET;

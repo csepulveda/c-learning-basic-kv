@@ -166,6 +166,65 @@ assert_contains "$output" "string" "TYPE existing key did not return string"
 output=$($CLIENT_BIN "TYPE missing_type_key")
 assert_contains "$output" "(nil)" "TYPE missing key did not return (nil)"
 
+# ------------------------------
+# HASH COMMANDS TESTING
+# ------------------------------
+
+echo "Testing HASH commands..."
+
+# Clean state
+$CLIENT_BIN DEL myhash > /dev/null
+
+# Test HSET single field
+output=$($CLIENT_BIN "HSET myhash field1 value1")
+assert_contains "$output" "1" "HSET single field did not return 1"
+
+# Test TYPE returns hash
+output=$($CLIENT_BIN "TYPE myhash")
+assert_contains "$output" "hash" "TYPE for hash did not return hash"
+
+# Test HGET existing field
+output=$($CLIENT_BIN "HGET myhash field1")
+assert_contains "$output" "value1" "HGET existing field did not return value1"
+
+# Test HGET missing field
+output=$($CLIENT_BIN "HGET myhash missing_field")
+assert_contains "$output" "(nil)" "HGET missing field did not return (nil)"
+
+# Test HSET multiple fields
+output=$($CLIENT_BIN "HSET myhash field2 value2 field3 value3")
+assert_contains "$output" "2" "HSET multiple fields did not return 2"
+
+# Test HGET for field2 and field3
+output=$($CLIENT_BIN "HGET myhash field2")
+assert_contains "$output" "value2" "HGET field2 did not return value2"
+
+output=$($CLIENT_BIN "HGET myhash field3")
+assert_contains "$output" "value3" "HGET field3 did not return value3"
+
+# Test HMGET existing + missing fields
+output=$($CLIENT_BIN "HMGET myhash field1 missing_field field3")
+echo "$output" | grep -q "1) value1" || fail "HMGET field1 failed"
+echo "$output" | grep -q "2) (nil)" || fail "HMGET missing_field failed"
+echo "$output" | grep -q "3) value3" || fail "HMGET field3 failed"
+
+# Test HINCRBY on new field (should create and increment)
+output=$($CLIENT_BIN "HINCRBY myhash counter 5")
+assert_contains "$output" "5" "HINCRBY new field did not return 5"
+
+# Test HINCRBY on existing field (increment further)
+output=$($CLIENT_BIN "HINCRBY myhash counter 3")
+assert_contains "$output" "8" "HINCRBY existing field did not return 8"
+
+# Test GET or SET on hash key should fail with parse error
+output=$($CLIENT_BIN "GET myhash")
+assert_contains "$output" "ERROR not found" "GET on hash key did not fail with not found error"
+
+output=$($CLIENT_BIN "SET myhash fail")
+assert_contains "$output" "ERROR parse error" "SET on hash key did not fail with parse error"
+
+echo "✅ HASH command tests passed!"
+
 # Shutdown server
 kill $SERVER_PID
 wait $SERVER_PID
