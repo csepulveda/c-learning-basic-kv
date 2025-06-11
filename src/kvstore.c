@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <stdbool.h>
 
 #include "kvstore.h"
 
@@ -29,9 +31,45 @@ static unsigned int hash(const char* key) {
 
 void kv_init() {
     for (int i = 0; i < HASH_TABLE_SIZE; i++) {
+        kv_node* node = hash_table[i];
+        while (node) {
+            kv_node* next = node->next;
+
+            if (node->type == KV_HASH) {
+                kv_field_node *field = node->hash_fields;
+                while (field) {
+                    kv_field_node *next_field = field->next;
+                    free(field);
+                    field = next_field;
+                }
+            }
+
+            free(node);
+            node = next;
+        }
         hash_table[i] = NULL;
     }
 }
+
+static kv_node* find_node(const char* key) {
+    unsigned int index = hash(key);
+    kv_node* node = hash_table[index];
+
+    while (node != NULL) {
+        if (strcmp(node->key, key) == 0) {
+            return node;
+        }
+        node = node->next;
+    }
+    return NULL;
+}
+
+bool kv_is_hash(const char *key) {
+    kv_node* node = find_node(key);
+    if (!node) return false;
+    return (node->type == KV_HASH);
+}
+
 
 int kv_set(const char* key, const char* value) {
     unsigned int index = hash(key);
@@ -39,6 +77,9 @@ int kv_set(const char* key, const char* value) {
 
     while (node != NULL) {
         if (strcmp(node->key, key) == 0) {
+            // enforce type safety
+            if (node->type != KV_STRING) return -1;
+
             snprintf(node->value, MAX_VAL_LEN, "%s", value);
             return 0;
         }
@@ -49,6 +90,7 @@ int kv_set(const char* key, const char* value) {
     if (!new_node) return -1;
 
     snprintf(new_node->key, MAX_KEY_LEN, "%s", key);
+    new_node->type = KV_STRING;
     snprintf(new_node->value, MAX_VAL_LEN, "%s", value);
     new_node->next = hash_table[index];
     hash_table[index] = new_node;
@@ -57,17 +99,14 @@ int kv_set(const char* key, const char* value) {
 }
 
 const char* kv_get(const char* key) {
-    unsigned int index = hash(key);
-    kv_node* node = hash_table[index];
+    kv_node* node = find_node(key);
 
-    while (node != NULL) {
-        if (strcmp(node->key, key) == 0) {
-            return node->value;
-        }
-        node = node->next;
-    }
-    return NULL;
+    if (!node) return NULL;
+    if (node->type != KV_STRING) return NULL; // enforce type safety
+
+    return node->value;
 }
+
 int kv_delete(const char* key) {
     unsigned int index = hash(key);
     kv_node* node = hash_table[index];
@@ -80,6 +119,16 @@ int kv_delete(const char* key) {
             } else {
                 hash_table[index] = node->next;
             }
+
+            if (node->type == KV_HASH) {
+                kv_field_node *field = node->hash_fields;
+                while (field) {
+                    kv_field_node *next_field = field->next;
+                    free(field);
+                    field = next_field;
+                }
+            }
+
             free(node);
             return 0;
         }
@@ -89,3 +138,133 @@ int kv_delete(const char* key) {
 
     return -1;
 }
+
+kv_type_t kv_get_type(const char *key) {
+    kv_node* node = find_node(key);
+    if (!node) return -1; // not found
+    return node->type;
+}
+
+int kv_hset(const char *key, const char *field, const char *value) {
+    unsigned int index = hash(key);
+    kv_node* node = hash_table[index];
+
+    while (node != NULL) {
+        if (strcmp(node->key, key) == 0) {
+            if (node->type != KV_HASH) return -1;
+
+            kv_field_node* field_node = node->hash_fields;
+            while (field_node != NULL) {
+                if (strcmp(field_node->field, field) == 0) {
+                    snprintf(field_node->value, MAX_VAL_LEN, "%s", value);
+                    return 0;
+                }
+                field_node = field_node->next;
+            }
+
+            kv_field_node* new_field = (kv_field_node*)malloc(sizeof(kv_field_node));
+            if (!new_field) return -1;
+
+            snprintf(new_field->field, MAX_KEY_LEN, "%s", field);
+            snprintf(new_field->value, MAX_VAL_LEN, "%s", value);
+            new_field->next = node->hash_fields;
+            node->hash_fields = new_field;
+            return 0;
+        }
+        node = node->next;
+    }
+
+    // create new hash key
+    kv_node* new_node = (kv_node*)malloc(sizeof(kv_node));
+    if (!new_node) return -1;
+
+    snprintf(new_node->key, MAX_KEY_LEN, "%s", key);
+    new_node->type = KV_HASH;
+    new_node->hash_fields = NULL;
+
+    kv_field_node* new_field = (kv_field_node*)malloc(sizeof(kv_field_node));
+    if (!new_field) {
+        free(new_node);
+        return -1;
+    }
+
+    snprintf(new_field->field, MAX_KEY_LEN, "%s", field);
+    snprintf(new_field->value, MAX_VAL_LEN, "%s", value);
+    new_field->next = NULL;
+
+    new_node->hash_fields = new_field;
+    new_node->next = hash_table[index];
+    hash_table[index] = new_node;
+
+    return 0;
+}
+
+const char* kv_hget(const char *key, const char *field) {
+    kv_node* node = find_node(key);
+    if (!node || node->type != KV_HASH) return NULL;
+
+    kv_field_node* field_node = node->hash_fields;
+    while (field_node != NULL) {
+        if (strcmp(field_node->field, field) == 0) {
+            return field_node->value;
+        }
+        field_node = field_node->next;
+    }
+
+    return NULL;
+}
+
+double kv_hincrby(const char *key, const char *field, double increment) {
+    kv_node* node = find_node(key);
+    if (node) {
+        if (node->type != KV_HASH) return -1;
+
+        kv_field_node* field_node = node->hash_fields;
+        while (field_node != NULL) {
+            if (strcmp(field_node->field, field) == 0) {
+                double value = strtod(field_node->value, NULL);
+                value += increment;
+                snprintf(field_node->value, MAX_VAL_LEN, "%.17g", value);
+                return value;
+            }
+            field_node = field_node->next;
+        }
+
+        // field does not exist → set it to increment
+        double value = increment;
+        kv_field_node* new_field = (kv_field_node*)malloc(sizeof(kv_field_node));
+        if (!new_field) return -1;
+
+        snprintf(new_field->field, MAX_KEY_LEN, "%s", field);
+        snprintf(new_field->value, MAX_VAL_LEN, "%.17g", value);
+        new_field->next = node->hash_fields;
+        node->hash_fields = new_field;
+        return value;
+    }
+
+    // key does not exist → create hash and field
+    kv_node* new_node = (kv_node*)malloc(sizeof(kv_node));
+    if (!new_node) return -1;
+
+    snprintf(new_node->key, MAX_KEY_LEN, "%s", key);
+    new_node->type = KV_HASH;
+    new_node->hash_fields = NULL;
+
+    kv_field_node* new_field = (kv_field_node*)malloc(sizeof(kv_field_node));
+    if (!new_field) {
+        free(new_node);
+        return -1;
+    }
+
+    snprintf(new_field->field, MAX_KEY_LEN, "%s", field);
+    snprintf(new_field->value, MAX_VAL_LEN, "%.17g", increment);
+    new_field->next = NULL;
+
+    new_node->hash_fields = new_field;
+    unsigned int index = hash(key);
+    new_node->next = hash_table[index];
+    hash_table[index] = new_node;
+
+    return increment;
+}
+
