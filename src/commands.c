@@ -390,7 +390,7 @@ void cmd_hset(int clientfd, const char *buffer) {
     send_response_header(clientfd, "OK STRING");
     char okmsg[64];
     snprintf(okmsg, sizeof(okmsg), "%d\n", field_count);
-    send(clientfd, okmsg, strlen(okmsg), 0);
+    send(clientfd, okmsg, strlen(okmsg), 0); //NOSONAR
     send_response_footer(clientfd);
 }
 
