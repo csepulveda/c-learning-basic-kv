@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <stdbool.h>
 
 #include "kvstore.h"
@@ -29,24 +28,39 @@ static unsigned int hash(const char* key) {
     return hash % HASH_TABLE_SIZE;
 }
 
+static void free_hash_fields(kv_field_node *field) {
+    while (field) {
+        kv_field_node *next_field = field->next;
+        free(field);
+        field = next_field;
+    }
+}
+
+static kv_field_node* find_field_node(kv_field_node *field_node, const char *field) {
+    while (field_node) {
+        if (strcmp(field_node->field, field) == 0) {
+            return field_node;
+        }
+        field_node = field_node->next;
+    }
+    return NULL;
+}
+
 void kv_init() {
     for (int i = 0; i < HASH_TABLE_SIZE; i++) {
         kv_node* node = hash_table[i];
+
         while (node) {
             kv_node* next = node->next;
 
             if (node->type == KV_HASH) {
-                kv_field_node *field = node->hash_fields;
-                while (field) {
-                    kv_field_node *next_field = field->next;
-                    free(field);
-                    field = next_field;
-                }
+                free_hash_fields(node->hash_fields);
             }
 
             free(node);
             node = next;
         }
+
         hash_table[i] = NULL;
     }
 }
@@ -121,17 +135,13 @@ int kv_delete(const char* key) {
             }
 
             if (node->type == KV_HASH) {
-                kv_field_node *field = node->hash_fields;
-                while (field) {
-                    kv_field_node *next_field = field->next;
-                    free(field);
-                    field = next_field;
-                }
+                free_hash_fields(node->hash_fields);
             }
 
             free(node);
             return 0;
         }
+
         prev = node;
         node = node->next;
     }
@@ -145,6 +155,7 @@ kv_type_t kv_get_type(const char *key) {
     return node->type;
 }
 
+
 int kv_hset(const char *key, const char *field, const char *value) {
     unsigned int index = hash(key);
     kv_node* node = hash_table[index];
@@ -153,13 +164,10 @@ int kv_hset(const char *key, const char *field, const char *value) {
         if (strcmp(node->key, key) == 0) {
             if (node->type != KV_HASH) return -1;
 
-            kv_field_node* field_node = node->hash_fields;
-            while (field_node != NULL) {
-                if (strcmp(field_node->field, field) == 0) {
-                    snprintf(field_node->value, MAX_VAL_LEN, "%s", value);
-                    return 0;
-                }
-                field_node = field_node->next;
+            kv_field_node* field_node = find_field_node(node->hash_fields, field);
+            if (field_node) {
+                snprintf(field_node->value, MAX_VAL_LEN, "%s", value);
+                return 0;
             }
 
             kv_field_node* new_field = (kv_field_node*)malloc(sizeof(kv_field_node));
@@ -171,6 +179,7 @@ int kv_hset(const char *key, const char *field, const char *value) {
             node->hash_fields = new_field;
             return 0;
         }
+
         node = node->next;
     }
 
