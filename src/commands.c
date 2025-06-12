@@ -30,6 +30,11 @@ static command_entry_t command_table[] = {
     { CMD_UNKNOWN, NULL }  // Sentinel
 };
 
+static const char *kv_type_names[] = {
+    [KV_STRING] = "string",
+    [KV_HASH]   = "hash",
+};
+
 void send_response_header(int clientfd, const char *type) {
     char header[BUFFER_SIZE];
     int len = snprintf(header, sizeof(header), "RESPONSE %s\n", type);
@@ -327,22 +332,21 @@ void cmd_type(int clientfd, const char *buffer) {
         return;
     }
 
-    const char *type_str = NULL;
+    kv_type_t type = kv_get_type(key);
 
-    if (kv_get(key) != NULL) {
-        type_str = "string\n";
-    }
-    else if (kv_is_hash(key)) {
-        type_str = "hash\n";
-    }
-    else {
-        type_str = "(nil)\n";
+    const char *type_str;
+    if (type >= 0 && type < (int)(sizeof(kv_type_names) / sizeof(kv_type_names[0])) && kv_type_names[type]) {
+        type_str = kv_type_names[type];
+    } else {
+        type_str = "(nil)";
     }
 
     send_response_header(clientfd, "OK STRING");
     send(clientfd, type_str, strlen(type_str), 0); //NOSONAR
+    send(clientfd, "\n", 1, 0);
     send_response_footer(clientfd);
 }
+
 
 void cmd_hset(int clientfd, const char *buffer) {
     char copy[BUFFER_SIZE];

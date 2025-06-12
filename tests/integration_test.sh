@@ -82,6 +82,17 @@ test_cases=(
     'SET myhash fail | ERROR parse error | SET on hash key did not return parse error'
     "SET $VERY_LONG_KEY value | ERROR | SET with very long key did not return ERROR"
     "SET test $VERY_LONG_VALUE | ERROR | SET with very long value did not return ERROR"
+    'HSET myhash fieldx valx | 1 | HSET for TYPE test failed'
+    'TYPE myhash | hash | TYPE on hash did not return hash'
+    'DEL nonexistent_key | not found | DEL nonexistent key did not return not found'
+    'HINCRBY newneg counter -42 | 42 | HINCRBY new field negative did not return -42'
+    'HINCRBY newneg counter 0 | 42 | HINCRBY increment 0 did not return same value'
+    'SET sss abc | OK | SET for HMGET test failed'
+#    'HMGET sss field1 | ERROR parse error | HMGET on string key did not return parse error'
+    'BLAH foo bar | ERROR | Unknown command did not return error'
+    'MGET missing1 missing2 missing3\n | 1) (nil) | MGET all missing key1 failed'
+    'MGET missing1 missing2 missing3\n | 2) (nil) | MGET all missing key2 failed'
+    'MGET missing1 missing2 missing3\n | 3) (nil) | MGET all missing key3 failed'
 )
 
 # -------- TEST RUNNERS --------
@@ -114,7 +125,7 @@ run_nc_tests() {
 
         echo "👉 NC: $cmd → expecting: '$expected'"
 
-        echo -ne "$cmd\n" | nc -w1 127.0.0.1 8080 > nc_out.txt
+        echo -ne "$cmd\n" | nc -q0 127.0.0.1 8080 > nc_out.txt
         output=$(cat nc_out.txt)
         assert_contains "$output" "$expected" "$desc (nc)"
     done
@@ -122,6 +133,7 @@ run_nc_tests() {
 
 SKIP_INTERACTIVE_FOR=(
     "SET test $VERY_LONG_VALUE"
+    "BLAH foo bar"
 )
 
 run_interactive_tests() {
