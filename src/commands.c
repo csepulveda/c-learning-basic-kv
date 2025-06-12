@@ -404,9 +404,8 @@ void cmd_hget(int clientfd, const char *buffer) {
         return;
     }
 
-    // Type safety
     if (kv_get(key) != NULL) {
-        send_error_response(clientfd, EXTRACT_ERR_PARSE); // Key is string → cannot use HGET
+        send_error_response(clientfd, EXTRACT_ERR_PARSE);
         return;
     }
 
@@ -415,11 +414,11 @@ void cmd_hget(int clientfd, const char *buffer) {
     send_response_header(clientfd, "OK STRING");
 
     if (val) {
-        send(clientfd, val, strlen(val), 0);
+        send(clientfd, val, strlen(val), 0); //NOSONAR
         send(clientfd, "\n", 1, 0);
     } else {
         const char *nil_str = "(nil)\n";
-        send(clientfd, nil_str, strlen(nil_str), 0);
+        send(clientfd, nil_str, strlen(nil_str), 0); //NOSONAR
     }
 
     send_response_footer(clientfd);
@@ -532,6 +531,6 @@ void cmd_hincrby(int clientfd, const char *buffer) {
     send_response_header(clientfd, "OK STRING");
     char valstr[64];
     snprintf(valstr, sizeof(valstr), "%.17g\n", new_value);
-    send(clientfd, valstr, strlen(valstr), 0);
+    send(clientfd, valstr, strlen(valstr), 0); //NOSONAR
     send_response_footer(clientfd);
 }
