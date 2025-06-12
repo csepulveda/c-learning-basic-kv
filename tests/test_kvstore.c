@@ -51,6 +51,13 @@ int main() {
         assert(strcmp(actual_value, expected_value) == 0);
     }
 
+    assert(kv_hset("myhash", "field1", "val1") == 0);
+    assert(strcmp(kv_hget("myhash", "field1"), "val1") == 0);
+    assert(kv_hincrby("myhash", "counter", 5) == 5);
+    assert(kv_hincrby("myhash", "counter", 2) == 7);
+    assert(kv_is_hash("myhash") == true);
+    assert(kv_get("myhash") == NULL); // type safety
+
     printf("✅ Hash table kvstore tests passed\n");
     return 0;
 }
