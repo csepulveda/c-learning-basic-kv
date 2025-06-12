@@ -79,11 +79,10 @@ static kv_node* find_node(const char* key) {
 }
 
 bool kv_is_hash(const char *key) {
-    kv_node* node = find_node(key);
+    const kv_node* node = find_node(key);
     if (!node) return false;
     return (node->type == KV_HASH);
 }
-
 
 int kv_set(const char* key, const char* value) {
     unsigned int index = hash(key);
@@ -113,11 +112,9 @@ int kv_set(const char* key, const char* value) {
 }
 
 const char* kv_get(const char* key) {
-    kv_node* node = find_node(key);
-
+    const kv_node* node = find_node(key);
     if (!node) return NULL;
     if (node->type != KV_STRING) return NULL; // enforce type safety
-
     return node->value;
 }
 
@@ -150,7 +147,7 @@ int kv_delete(const char* key) {
 }
 
 kv_type_t kv_get_type(const char *key) {
-    kv_node* node = find_node(key);
+    const kv_node* node = find_node(key);
     if (!node) return -1; // not found
     return node->type;
 }
