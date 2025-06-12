@@ -33,19 +33,20 @@ command_t parse_command(const char *message) {
 
     for (size_t i = 0; i < num_commands; i++) {
         const command_def_t *c = &commands[i];
-        if (strncmp(message, c->name, c->len) == 0) {
-            char terminator = message[c->len];
-            if (c->simple_terminator) {
-                if (IS_SIMPLE_CMD_TERMINATOR(terminator)) return c->cmd;
-            } else {
-                if (IS_CMD_TERMINATOR(terminator)) return c->cmd;
-            }
-        }
+
+        if (strncmp(message, c->name, c->len) != 0) continue;
+
+        char terminator = message[c->len];
+
+        bool is_valid_terminator = c->simple_terminator
+            ? IS_SIMPLE_CMD_TERMINATOR(terminator)
+            : IS_CMD_TERMINATOR(terminator);
+
+        if (is_valid_terminator) return c->cmd;
     }
 
     return CMD_UNKNOWN;
 }
-
 
 int extract_key_value(const char *message, char *key, char *value, size_t key_size, size_t value_size) {
     const char *space1 = strchr(message, ' ');
