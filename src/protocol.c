@@ -5,35 +5,47 @@
 #include "kvstore.h"
 #include "errors.h"
 
-/**
- * @brief Determines the command type from a protocol message string.
- *
- * Analyzes the beginning of the input message to identify if it matches a known command
- * ("SET", "GET", "DEL", "PING", "TIME" ) followed by a valid delimiter.
- *
- * @param message The input message string to parse.
- * @return command_t The corresponding command type, or CMD_UNKNOWN if no match is found.
- */
+typedef struct {
+    const char *name;
+    size_t len;
+    bool simple_terminator;
+    command_t cmd;
+} command_def_t;
+
 command_t parse_command(const char *message) {
-    if (strncmp(message, "SET", 3) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[3])) return CMD_SET;
-    if (strncmp(message, "GET", 3) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[3])) return CMD_GET;
-    if (strncmp(message, "DEL", 3) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[3])) return CMD_DEL;
+    static const command_def_t commands[] = {
+        { "SET",     3, true,  CMD_SET },
+        { "GET",     3, true,  CMD_GET },
+        { "DEL",     3, true,  CMD_DEL },
+        { "HSET",    4, true,  CMD_HSET },
+        { "HGET",    4, true,  CMD_HGET },
+        { "HMGET",   5, true,  CMD_HMGET },
+        { "HINCRBY", 7, true,  CMD_HINCRBY },
+        { "TYPE",    4, true,  CMD_TYPE },
+        { "MSET",    4, true,  CMD_MSET },
+        { "MGET",    4, true,  CMD_MGET },
+        { "PING",    4, false, CMD_PING },
+        { "INFO",    4, false, CMD_INFO },
+        { "TIME",    4, false, CMD_TIME },
+    };
 
-    if (strncmp(message, "HSET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_HSET;
-    if (strncmp(message, "HGET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_HGET;
-    if (strncmp(message, "HMGET", 5) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[5])) return CMD_HMGET;
-    if (strncmp(message, "HINCRBY", 7) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[7])) return CMD_HINCRBY;
+    const size_t num_commands = sizeof(commands) / sizeof(commands[0]);
 
-    if (strncmp(message, "TYPE", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_TYPE;
-    if (strncmp(message, "MSET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_MSET;
-    if (strncmp(message, "MGET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_MGET;
+    for (size_t i = 0; i < num_commands; i++) {
+        const command_def_t *c = &commands[i];
+        if (strncmp(message, c->name, c->len) == 0) {
+            char terminator = message[c->len];
+            if (c->simple_terminator) {
+                if (IS_SIMPLE_CMD_TERMINATOR(terminator)) return c->cmd;
+            } else {
+                if (IS_CMD_TERMINATOR(terminator)) return c->cmd;
+            }
+        }
+    }
 
-    if (strncmp(message, "PING", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_PING;
-    if (strncmp(message, "INFO", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_INFO;
-    if (strncmp(message, "TIME", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_TIME;
-    
     return CMD_UNKNOWN;
 }
+
 
 int extract_key_value(const char *message, char *key, char *value, size_t key_size, size_t value_size) {
     const char *space1 = strchr(message, ' ');
