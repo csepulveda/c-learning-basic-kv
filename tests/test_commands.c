@@ -342,6 +342,184 @@ void test_extract_key_from_ptr() {
     printf("✅ All extract_key_from_ptr tests passed!\n");
 }
 
+void test_extract_value_from_ptr() {
+    char value[128];
+    const char *input;
+
+    // Quoted value
+    input = "\"my value\" rest";
+    const char *p = input;
+    int ret = extract_value_from_ptr(&p, value, sizeof(value));
+    printf("extract_value_from_ptr() quoted -> '%s' ret=%d\n", value, ret);
+    assert(ret == EXTRACT_OK);
+    assert(strcmp(value, "my value") == 0);
+    assert(strcmp(p, "rest") == 0);
+
+    // Unterminated
+    input = "\"unterminated value";
+    p = input;
+    ret = extract_value_from_ptr(&p, value, sizeof(value));
+    printf("extract_value_from_ptr() unterminated -> ret=%d\n", ret);
+    assert(ret == EXTRACT_ERR_PARSE);
+
+    // Value too long
+    char long_input[300];
+    memset(long_input, 'B', 200);
+    long_input[0] = '"';
+    long_input[199] = '"';
+    long_input[200] = ' ';
+    long_input[201] = '\0';
+    p = long_input;
+    ret = extract_value_from_ptr(&p, value, 10); // small buffer
+    printf("extract_value_from_ptr() too long -> ret=%d\n", ret);
+    assert(ret == EXTRACT_ERR_VALUE_TOO_LONG);
+
+    // Unquoted value
+    input = "plain_value next";
+    p = input;
+    ret = extract_value_from_ptr(&p, value, sizeof(value));
+    printf("extract_value_from_ptr() unquoted -> '%s' ret=%d\n", value, ret);
+    assert(ret == EXTRACT_OK);
+    assert(strcmp(value, "plain_value") == 0);
+    assert(strcmp(p, "next") == 0);
+
+    printf("✅ All extract_value_from_ptr tests passed!\n");
+}
+
+void test_cmd_mset_errors() {
+    int fds[2];
+    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+
+    kv_init();
+
+    // Missing value
+    cmd_mset(fds[1], "MSET k1\n");
+    char buf[BUF_SIZE];
+    recv_until_end(fds[0], buf, sizeof(buf));
+    printf("cmd_mset() missing value -> '%s'\n", buf);
+    assert(strstr(buf, "RESPONSE ERROR") != NULL);
+    assert(strstr(buf, ERR_PARSE_ERROR) != NULL);
+    assert(strstr(buf, "END") != NULL);
+
+    // Key too long
+    char long_key[MAX_KEY_LEN + 100];
+    memset(long_key, 'A', sizeof(long_key) - 1);
+    long_key[sizeof(long_key) - 1] = '\0';
+    char buffer[BUF_SIZE];
+    snprintf(buffer, sizeof(buffer), "MSET %s v1\n", long_key);
+    cmd_mset(fds[1], buffer);
+    recv_until_end(fds[0], buf, sizeof(buf));
+    printf("cmd_mset() key too long -> '%s'\n", buf);
+    assert(strstr(buf, "RESPONSE ERROR") != NULL);
+    assert(strstr(buf, ERR_KEY_TOO_LONG) != NULL);
+    assert(strstr(buf, "END") != NULL);
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
+void test_cmd_mget_empty() {
+    int fds[2];
+    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+
+    kv_init();
+
+    cmd_mget(fds[1], "MGET\n");
+    char buf[BUF_SIZE];
+    recv_until_end(fds[0], buf, sizeof(buf));
+    printf("cmd_mget() empty -> '%s'\n", buf);
+    // Should not crash — just "END" expected
+    assert(strstr(buf, "END") != NULL);
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
+void test_cmd_type_invalid() {
+    int fds[2];
+    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+
+    kv_init();
+
+    // No such key
+    cmd_type(fds[1], "TYPE unknown_key");
+    char buf[BUF_SIZE];
+    recv_until_end(fds[0], buf, sizeof(buf));
+    printf("cmd_type() unknown_key -> '%s'\n", buf);
+    assert(response_contains(buf, "(nil)"));
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
+void test_cmd_hset_errors() {
+    int fds[2];
+    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+
+    kv_init();
+
+    // Missing field/value → parse error
+    cmd_hset(fds[1], "HSET myhash field1\n");
+    char buf[BUF_SIZE];
+    recv_until_end(fds[0], buf, sizeof(buf));
+    printf("cmd_hset() missing value -> '%s'\n", buf);
+    assert(strstr(buf, "ERROR parse error") != NULL);
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
+void test_cmd_hget_wrong_type() {
+    int fds[2];
+    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+
+    kv_init();
+    kv_set("foo", "bar"); // string type
+
+    cmd_hget(fds[1], "HGET foo field1");
+    char buf[BUF_SIZE];
+    recv_until_end(fds[0], buf, sizeof(buf));
+    printf("cmd_hget() wrong type -> '%s'\n", buf);
+    assert(strstr(buf, "ERROR parse error") != NULL);
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
+void test_cmd_hmget_no_fields() {
+    int fds[2];
+    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+
+    kv_init();
+    kv_hset("myhash", "field1", "val1");
+
+    cmd_hmget(fds[1], "HMGET myhash\n");
+    char buf[BUF_SIZE];
+    recv_until_end(fds[0], buf, sizeof(buf));
+    printf("cmd_hmget() no fields -> '%s'\n", buf);
+    assert(strstr(buf, "ERROR parse error") != NULL);
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
+void test_cmd_hincrby_missing_arg() {
+    int fds[2];
+    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+
+    kv_init();
+    kv_hset("myhash", "counter", "5");
+
+    cmd_hincrby(fds[1], "HINCRBY myhash counter\n");
+    char buf[BUF_SIZE];
+    recv_until_end(fds[0], buf, sizeof(buf));
+    printf("cmd_hincrby() missing arg -> '%s'\n", buf);
+    assert(strstr(buf, "ERROR parse error") != NULL);
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
 int main() {
     // Test OK
     test_cmd_set("SET foo bar\n", "OK");
@@ -387,6 +565,14 @@ int main() {
     test_cmd_hincrby();
 
     test_extract_key_from_ptr();
+    test_extract_value_from_ptr();
+    test_cmd_mset_errors();
+    test_cmd_mget_empty();
+    test_cmd_type_invalid();
+    test_cmd_hset_errors();
+    test_cmd_hget_wrong_type();
+    test_cmd_hmget_no_fields();
+    test_cmd_hincrby_missing_arg();
 
     printf("✅ All cmd_set tests passed!\n");
     return 0;

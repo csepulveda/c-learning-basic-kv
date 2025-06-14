@@ -121,6 +121,8 @@ int extract_key_from_ptr(const char **p, char *key, size_t key_size) {
 }
 
 int extract_value_from_ptr(const char **p, char *value, size_t value_size) {
+    if (**p == '\0' || **p == '\n') return EXTRACT_ERR_PARSE;  // <--- ADD THIS LINE
+
     if (**p == '"') {
         (*p)++;
         const char *value_start = *p;
@@ -137,13 +139,15 @@ int extract_value_from_ptr(const char **p, char *value, size_t value_size) {
         const char *value_start = *p;
         while (**p != ' ' && **p != '\0' && **p != '\n') (*p)++;
         size_t value_len = *p - value_start;
+
+        if (value_len == 0) return EXTRACT_ERR_PARSE;
+
         if (value_len >= value_size) return EXTRACT_ERR_VALUE_TOO_LONG;
 
         memcpy(value, value_start, value_len);
         value[value_len] = '\0';
     }
 
-    // Aquí el fix → para que p no quede mal posicionada
     while (**p == ' ') (*p)++;
     return EXTRACT_OK;
 }
