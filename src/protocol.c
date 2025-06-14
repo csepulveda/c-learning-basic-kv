@@ -30,7 +30,8 @@ command_t parse_command(const char *message) {
     };
 
     const size_t num_commands = sizeof(commands) / sizeof(commands[0]);
-    size_t msg_len = strlen(message);
+    size_t msg_len = message ? strlen(message) : 0;
+    
     for (size_t i = 0; i < num_commands; i++) {
         const command_def_t *c = &commands[i];
         if (msg_len < c->len) continue;             /* avoid OOB */

@@ -41,7 +41,7 @@ int kv_count_keys(void);
 int kv_hset(const char *key, const char *field, const char *value);
 const char* kv_hget(const char *key, const char *field);
 double kv_hincrby(const char *key, const char *field, double increment);
-kv_type_t kv_get_type(const char *key);
+int kv_get_type(const char *key);
 bool kv_is_hash(const char *key);
 
 #endif

@@ -146,7 +146,7 @@ int kv_delete(const char* key) {
     return -1;
 }
 
-kv_type_t kv_get_type(const char *key) {
+int kv_get_type(const char *key) {
     const kv_node* node = find_node(key);
     if (!node) return -1; // not found
     return node->type;
