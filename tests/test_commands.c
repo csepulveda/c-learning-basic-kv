@@ -298,6 +298,50 @@ void test_cmd_hmget() {
     close(fds[1]);
 }
 
+void test_extract_key_from_ptr() {
+    char key[128];
+    const char *input;
+
+    // Test 1: Quoted token normal
+    input = "\"mykey\" rest_of_input";
+    const char *p = input;
+    int ret = extract_key_from_ptr(&p, key, sizeof(key));
+    printf("extract_key_from_ptr() -> '%s' ret=%d\n", key, ret);
+    assert(ret == EXTRACT_OK);
+    assert(strcmp(key, "mykey") == 0);
+    assert(strcmp(p, "rest_of_input") == 0);
+
+    // Test 2: Quoted token, unterminated (parse error)
+    input = "\"unterminated rest_of_input";
+    p = input;
+    ret = extract_key_from_ptr(&p, key, sizeof(key));
+    printf("extract_key_from_ptr() unterminated -> ret=%d\n", ret);
+    assert(ret == EXTRACT_ERR_PARSE);
+
+    // Test 3: Quoted token, key too long
+    char long_input[300];
+    memset(long_input, 'A', 200);  // fill with 'A's
+    long_input[0] = '"';
+    long_input[199] = '"';
+    long_input[200] = ' ';
+    long_input[201] = '\0';
+    p = long_input;
+    ret = extract_key_from_ptr(&p, key, 10);  // force small key_size
+    printf("extract_key_from_ptr() too long -> ret=%d\n", ret);
+    assert(ret == EXTRACT_ERR_KEY_TOO_LONG);
+
+    // Test 4: Unquoted token (still test unquoted for completeness)
+    input = "plain_key next_token";
+    p = input;
+    ret = extract_key_from_ptr(&p, key, sizeof(key));
+    printf("extract_key_from_ptr() unquoted -> '%s' ret=%d\n", key, ret);
+    assert(ret == EXTRACT_OK);
+    assert(strcmp(key, "plain_key") == 0);
+    assert(strcmp(p, "next_token") == 0);
+
+    printf("✅ All extract_key_from_ptr tests passed!\n");
+}
+
 int main() {
     // Test OK
     test_cmd_set("SET foo bar\n", "OK");
@@ -341,6 +385,8 @@ int main() {
     test_cmd_hset_hget();
     test_cmd_hmget();
     test_cmd_hincrby();
+
+    test_extract_key_from_ptr();
 
     printf("✅ All cmd_set tests passed!\n");
     return 0;

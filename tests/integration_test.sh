@@ -4,6 +4,7 @@ SERVER_BIN=bin/server
 CLIENT_BIN=bin/client
 
 echo "🚀 Starting integration tests..."
+NCOPTS=$1
 
 $SERVER_BIN &
 SERVER_PID=$!
@@ -125,7 +126,7 @@ run_nc_tests() {
 
         echo "👉 NC: $cmd → expecting: '$expected'"
 
-        echo -ne "$cmd\n" | nc -q0 127.0.0.1 8080 > nc_out.txt
+        echo -ne "$cmd\n" | nc ${NCOPTS} 127.0.0.1 8080 > nc_out.txt
         output=$(cat nc_out.txt)
         assert_contains "$output" "$expected" "$desc (nc)"
     done

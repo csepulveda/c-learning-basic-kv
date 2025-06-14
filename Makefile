@@ -7,6 +7,13 @@ CFLAGS_TEST := -Wall -Wextra -O0 -g -fprofile-arcs -ftest-coverage
 LDFLAGS  := -lpthread
 LDFLAGS_TEST := --coverage
 
+#if MAC use -w1 as NC option, if no use -q0
+ifeq ($(shell uname), Darwin)
+NC := -w1
+else
+NC := -q0
+endif
+
 SRC_DIR     := src
 BIN_DIR     := bin
 TEST_DIR    := tests
@@ -83,7 +90,7 @@ test: $(TEST_KV_BIN) $(TEST_PROTOCOL_BIN) $(TEST_LOGS_BIN) $(TEST_CLIENT_BIN) $(
 
 integration-test:
 	@echo "Running integration tests..."
-	@tests/integration_test.sh
+	@tests/integration_test.sh $(NC)
 
 clean:
 	rm -rf $(BIN_DIR) *.gcda *.gcno *.info *.gcov coverage.xml
