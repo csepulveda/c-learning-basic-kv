@@ -30,18 +30,15 @@ command_t parse_command(const char *message) {
     };
 
     const size_t num_commands = sizeof(commands) / sizeof(commands[0]);
-
+    size_t msg_len = strlen(message);
     for (size_t i = 0; i < num_commands; i++) {
         const command_def_t *c = &commands[i];
-
+        if (msg_len < c->len) continue;             /* avoid OOB */
         if (strncmp(message, c->name, c->len) != 0) continue;
-
-        char terminator = message[c->len];
-
+        char terminator = message[c->len];          /* safe now */
         bool is_valid_terminator = c->simple_terminator
             ? IS_SIMPLE_CMD_TERMINATOR(terminator)
             : IS_CMD_TERMINATOR(terminator);
-
         if (is_valid_terminator) return c->cmd;
     }
 
