@@ -10,18 +10,32 @@
 #include "logs.h"
 #include "errors.h"
 
-/**
- * @brief Constructs a command string from command-line arguments.
- *
- * Joins command-line arguments from argv[1] to argv[argc-1] into a single space-separated string,
- * storing the result in the provided buffer. Ensures the buffer is not overflowed and is properly null-terminated.
- *
- * @param argc Number of command-line arguments.
- * @param argv Array of argument strings.
- * @param buffer Destination buffer for the constructed command string.
- * @param buffer_size Size of the destination buffer in bytes.
- * @return 0 on success, or -1 if the buffer is invalid or too small.
- */
+static bool append_char(char *buffer, size_t *offset, size_t buffer_size, char c) {
+    if (*offset + 1 >= buffer_size) return false;
+    buffer[(*offset)++] = c;
+    return true;
+}
+
+static bool append_quoted_word(const char *word, char *buffer, size_t *offset, size_t buffer_size) {
+    if (!append_char(buffer, offset, buffer_size, '"')) return false;
+
+    for (size_t j = 0; word[j] != '\0'; j++) {
+        if (word[j] == '"') {
+            if (!append_char(buffer, offset, buffer_size, '\\')) return false;
+        }
+        if (!append_char(buffer, offset, buffer_size, word[j])) return false;
+    }
+
+    return append_char(buffer, offset, buffer_size, '"');
+}
+
+static bool append_unquoted_word(const char *word, char *buffer, size_t *offset, size_t buffer_size) {
+    for (size_t j = 0; word[j] != '\0'; j++) {
+        if (!append_char(buffer, offset, buffer_size, word[j])) return false;
+    }
+    return true;
+}
+
 int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_size) {
     if (!buffer || buffer_size == 0) return -1;
 
@@ -29,37 +43,19 @@ int build_command_string(int argc, char *argv[], char *buffer, size_t buffer_siz
 
     for (int i = 1; i < argc; i++) {
         const char *word = argv[i];
-        size_t word_len = strnlen(word, buffer_size);
-
-        if (i > 1) {
-            if (offset + 1 >= buffer_size) {
-                log_error("Buffer overflow while building command string");
-                return -1;
-            }
-            buffer[offset++] = ' ';
-        }
-
-        bool needs_quotes = strchr(word, ' ') != NULL;
-        if (needs_quotes) {
-            if (offset + 1 >= buffer_size) return -1;
-            buffer[offset++] = '"';
-        }
-        if (offset + word_len >= buffer_size) {
-            log_error("Command string too long: %s", word);
+        if (i > 1 && !append_char(buffer, &offset, buffer_size, ' ')) {
+            log_error("Buffer overflow while building command string");
             return -1;
         }
 
-        for (size_t j = 0; j < word_len; ++j) {
-            if (needs_quotes && word[j] == '"') {
-                if (offset + 2 >= buffer_size) return -1;
-                buffer[offset++] = '\\';
-            }
-            if (offset + 1 >= buffer_size) return -1;
-            buffer[offset++] = word[j];
-        }
-        if (needs_quotes) {
-            if (offset + 1 >= buffer_size) return -1;
-            buffer[offset++] = '"';
+        bool needs_quotes = strchr(word, ' ') != NULL;
+        bool success = needs_quotes
+            ? append_quoted_word(word, buffer, &offset, buffer_size)
+            : append_unquoted_word(word, buffer, &offset, buffer_size);
+
+        if (!success) {
+            log_error("Command string too long or invalid: %s", word);
+            return -1;
         }
     }
 
