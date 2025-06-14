@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "commands.h"
 #include "kvstore.h"
@@ -22,7 +23,16 @@ static command_entry_t command_table[] = {
     { CMD_DEL,     cmd_del },
     { CMD_INFO,    cmd_info },
     { CMD_TYPE,    cmd_type },
+    { CMD_HSET,    cmd_hset },
+    { CMD_HGET,    cmd_hget },
+    { CMD_HMGET,   cmd_hmget },
+    { CMD_HINCRBY, cmd_hincrby },
     { CMD_UNKNOWN, NULL }  // Sentinel
+};
+
+static const char *kv_type_names[] = {
+    [KV_STRING] = "string",
+    [KV_HASH]   = "hash",
 };
 
 void send_response_header(int clientfd, const char *type) {
@@ -60,21 +70,59 @@ void send_error_response(int clientfd, int res) {
     send_response_footer(clientfd);
 }
 
-int extract_key_from_ptr(const char **p, char *key, size_t key_size) {
-    const char *key_start = *p;
-    while (**p != ' ' && **p != '\0' && **p != '\n') (*p)++;
-    size_t key_len = *p - key_start;
-    if (key_len >= key_size) return EXTRACT_ERR_KEY_TOO_LONG;
-    memcpy(key, key_start, key_len);
-    key[key_len] = '\0';
+int extract_key_field(const char *message, char *key, size_t key_size, char *field, size_t field_size) {
+    const char *p = message;
 
-    while (**p == ' ') (*p)++;
-    if (**p == '\0' || **p == '\n') return EXTRACT_ERR_PARSE;
+    // Skip command word
+    while (*p != ' ' && *p != '\0' && *p != '\n') p++;
+    if (*p == '\0' || *p == '\n') return EXTRACT_ERR_PARSE;
+    while (*p == ' ') p++;
+
+    // Extract key
+    int res = extract_key_from_ptr(&p, key, key_size);
+    if (res != EXTRACT_OK) return res;
+
+    // Extract field
+    res = extract_key_from_ptr(&p, field, field_size);
+    if (res != EXTRACT_OK) return res;
 
     return EXTRACT_OK;
 }
 
+int extract_key_from_ptr(const char **p, char *key, size_t key_size) {
+    while (**p == ' ') (*p)++;
+
+    if (**p == '"') {
+        // parse quoted token
+        (*p)++; // skip opening quote
+        const char *key_start = *p;
+        const char *quote_end = strchr(*p, '"');
+        if (!quote_end) return EXTRACT_ERR_PARSE;
+
+        size_t key_len = quote_end - key_start;
+        if (key_len >= key_size) return EXTRACT_ERR_KEY_TOO_LONG;
+
+        memcpy(key, key_start, key_len);
+        key[key_len] = '\0';
+        *p = quote_end + 1; // skip closing quote
+    } else {
+        // unquoted token
+        const char *key_start = *p;
+        while (**p != ' ' && **p != '\0' && **p != '\n') (*p)++;
+        size_t key_len = *p - key_start;
+        if (key_len >= key_size) return EXTRACT_ERR_KEY_TOO_LONG;
+
+        memcpy(key, key_start, key_len);
+        key[key_len] = '\0';
+    }
+
+    while (**p == ' ') (*p)++;
+    return EXTRACT_OK;
+}
+
 int extract_value_from_ptr(const char **p, char *value, size_t value_size) {
+    if (**p == '\0' || **p == '\n') return EXTRACT_ERR_PARSE;  // <--- ADD THIS LINE
+
     if (**p == '"') {
         (*p)++;
         const char *value_start = *p;
@@ -91,6 +139,9 @@ int extract_value_from_ptr(const char **p, char *value, size_t value_size) {
         const char *value_start = *p;
         while (**p != ' ' && **p != '\0' && **p != '\n') (*p)++;
         size_t value_len = *p - value_start;
+
+        if (value_len == 0) return EXTRACT_ERR_PARSE;
+
         if (value_len >= value_size) return EXTRACT_ERR_VALUE_TOO_LONG;
 
         memcpy(value, value_start, value_len);
@@ -285,17 +336,205 @@ void cmd_type(int clientfd, const char *buffer) {
         return;
     }
 
-    const char *val = kv_get(key);
+    kv_type_t type = kv_get_type(key);
+
+    const char *type_str;
+    if (type >= 0 && type < (int)(sizeof(kv_type_names) / sizeof(kv_type_names[0])) && kv_type_names[type]) {
+        type_str = kv_type_names[type];
+    } else {
+        type_str = "(nil)";
+    }
+
+    send_response_header(clientfd, "OK STRING");
+    send(clientfd, type_str, strlen(type_str), 0); //NOSONAR
+    send(clientfd, "\n", 1, 0);
+    send_response_footer(clientfd);
+}
+
+
+void cmd_hset(int clientfd, const char *buffer) {
+    char copy[BUFFER_SIZE];
+    snprintf(copy, sizeof(copy), "%s", buffer);
+
+    const char *p = copy + 5; // skip "HSET "
+    while (*p == ' ') p++;
+
+    char key[MAX_KEY_LEN];
+    int res = extract_key_from_ptr(&p, key, sizeof(key));
+    if (res != EXTRACT_OK) {
+        send_error_response(clientfd, res);
+        return;
+    }
+
+    int field_count = 0;
+    while (*p != '\0' && *p != '\n') {
+        char field[MAX_KEY_LEN];
+        char value[MAX_VAL_LEN];
+
+        int field_res = extract_key_from_ptr(&p, field, MAX_KEY_LEN);  // CORRECTO: usar extract_key_from_ptr aquí
+        if (field_res != EXTRACT_OK) {
+            send_error_response(clientfd, field_res);
+            return;
+        }
+
+        int value_res = extract_value_from_ptr(&p, value, MAX_VAL_LEN);
+        if (value_res != EXTRACT_OK) {
+            send_error_response(clientfd, value_res);
+            return;
+        }
+
+        if (kv_hset(key, field, value) != 0) {
+            send_error_response(clientfd, EXTRACT_ERR_INTERNAL);
+            return;
+        }
+
+        field_count++;
+    }
+
+    send_response_header(clientfd, "OK STRING");
+    char okmsg[64];
+    snprintf(okmsg, sizeof(okmsg), "%d\n", field_count);
+    send(clientfd, okmsg, strlen(okmsg), 0); //NOSONAR
+    send_response_footer(clientfd);
+}
+
+void cmd_hget(int clientfd, const char *buffer) {
+    char key[MAX_KEY_LEN];
+    char field[MAX_KEY_LEN];
+
+    int res = extract_key_field(buffer, key, sizeof(key), field, sizeof(field));
+    if (res != EXTRACT_OK) {
+        send_error_response(clientfd, res);
+        return;
+    }
+
+    if (kv_get(key) != NULL) {
+        send_error_response(clientfd, EXTRACT_ERR_PARSE);
+        return;
+    }
+
+    const char *val = kv_hget(key, field);
 
     send_response_header(clientfd, "OK STRING");
 
     if (val) {
-        const char *type_str = "string\n";
-        send(clientfd, type_str, strlen(type_str), 0); //NOSONAR
+        send(clientfd, val, strlen(val), 0); //NOSONAR
+        send(clientfd, "\n", 1, 0);
     } else {
         const char *nil_str = "(nil)\n";
         send(clientfd, nil_str, strlen(nil_str), 0); //NOSONAR
     }
 
+    send_response_footer(clientfd);
+}
+
+void cmd_hmget(int clientfd, const char *buffer) {
+    char copy[BUFFER_SIZE];
+    snprintf(copy, sizeof(copy), "%s", buffer);
+
+    const char *p = copy + 6; // skip "HMGET "
+    while (*p == ' ') p++;
+
+    // Manually parse key
+    char key[MAX_KEY_LEN];
+    int res = extract_key_from_ptr(&p, key, sizeof(key));
+    if (res != EXTRACT_OK) {
+        send_error_response(clientfd, res);
+        return;
+    }
+
+    // Parse fields
+    const char *fields[64];
+    char fields_storage[64][MAX_KEY_LEN];
+    int field_count = 0;
+
+    while (*p != '\0' && *p != '\n') {
+        res = extract_key_from_ptr(&p, fields_storage[field_count], MAX_KEY_LEN);
+        if (res != EXTRACT_OK) {
+            send_error_response(clientfd, res);
+            return;
+        }
+
+        fields[field_count] = fields_storage[field_count];
+        field_count++;
+
+        if (field_count >= 64) break;
+    }
+
+    // Validate: at least 1 field required
+    if (field_count == 0) {
+        send_error_response(clientfd, EXTRACT_ERR_PARSE);
+        return;
+    }
+
+    // Build results
+    char *results[64];
+    char results_storage[64][MAX_VAL_LEN];
+    for (int i = 0; i < field_count; i++) {
+        results[i] = results_storage[i];
+        const char *val = kv_hget(key, fields[i]);
+        if (val) {
+            snprintf(results[i], MAX_VAL_LEN, "%s", val);
+        } else {
+            snprintf(results[i], MAX_VAL_LEN, "(nil)");
+        }
+    }
+
+    // Send response
+    send_response_header(clientfd, "OK MULTI");
+
+    for (int i = 0; i < field_count; i++) {
+        char line[BUFFER_SIZE];
+        int len = snprintf(line, sizeof(line), "%d) %s\n", i + 1, results[i]);
+        send(clientfd, line, len, 0);
+    }
+
+    send_response_footer(clientfd);
+}
+
+void cmd_hincrby(int clientfd, const char *buffer) {
+    char copy[BUFFER_SIZE];
+    snprintf(copy, sizeof(copy), "%s", buffer);
+
+    const char *p = copy + 8; // skip "HINCRBY "
+    while (*p == ' ') p++;
+
+    char key[MAX_KEY_LEN];
+    int res = extract_key_from_ptr(&p, key, sizeof(key));
+    if (res != EXTRACT_OK) {
+        send_error_response(clientfd, res);
+        return;
+    }
+
+    char field[MAX_KEY_LEN];
+    res = extract_key_from_ptr(&p, field, sizeof(field));
+    if (res != EXTRACT_OK) {
+        send_error_response(clientfd, res);
+        return;
+    }
+
+    // Now parse the increment
+    while (*p == ' ') p++;
+    if (*p == '\0' || *p == '\n') {
+        send_error_response(clientfd, EXTRACT_ERR_PARSE);
+        return;
+    }
+
+    char incr_str[64];
+    size_t len = 0;
+    while (*p != ' ' && *p != '\0' && *p != '\n' && len < sizeof(incr_str) - 1) {
+        incr_str[len++] = *p;
+        p++;
+    }
+    incr_str[len] = '\0';
+
+    double increment = strtod(incr_str, NULL);
+
+    double new_value = kv_hincrby(key, field, increment);
+
+    send_response_header(clientfd, "OK STRING");
+    char valstr[64];
+    snprintf(valstr, sizeof(valstr), "%.17g\n", new_value);
+    send(clientfd, valstr, strlen(valstr), 0); //NOSONAR
     send_response_footer(clientfd);
 }

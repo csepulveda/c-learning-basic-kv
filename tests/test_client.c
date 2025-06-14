@@ -100,6 +100,14 @@ void test_handle_char() {
     printf("✅ test_handle_char passed\n");
 }
 
+void test_multiple_arguments_with_spaces() {
+    char *argv[] = { "client", "SET", "key", "val with spaces" };
+    char buffer[1024] = {0};
+    int result = build_command_string(4, argv, buffer, sizeof(buffer));
+    assert(result == 0);
+    assert(strcmp(buffer, "SET key \"val with spaces\"") == 0);
+}
+
 int main() {
     test_single_argument();
     test_multiple_arguments();
@@ -107,6 +115,7 @@ int main() {
     test_empty_buffer();
     test_send_command_too_long();
     test_handle_char();
+    test_multiple_arguments_with_spaces();
     printf("✅ All build_command_string tests passed\n");
     return 0;
 }

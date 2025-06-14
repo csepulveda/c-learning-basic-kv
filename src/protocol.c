@@ -5,28 +5,43 @@
 #include "kvstore.h"
 #include "errors.h"
 
-/**
- * @brief Determines the command type from a protocol message string.
- *
- * Analyzes the beginning of the input message to identify if it matches a known command
- * ("SET", "GET", "DEL", "PING", "TIME" ) followed by a valid delimiter.
- *
- * @param message The input message string to parse.
- * @return command_t The corresponding command type, or CMD_UNKNOWN if no match is found.
- */
+typedef struct {
+    const char *name;
+    size_t len;
+    bool simple_terminator;
+    command_t cmd;
+} command_def_t;
+
 command_t parse_command(const char *message) {
-    if (strncmp(message, "SET", 3) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[3])) return CMD_SET;
-    if (strncmp(message, "GET", 3) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[3])) return CMD_GET;
-    if (strncmp(message, "DEL", 3) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[3])) return CMD_DEL;
+    static const command_def_t commands[] = {
+        { "SET",     3, true,  CMD_SET },
+        { "GET",     3, true,  CMD_GET },
+        { "DEL",     3, true,  CMD_DEL },
+        { "HSET",    4, true,  CMD_HSET },
+        { "HGET",    4, true,  CMD_HGET },
+        { "HMGET",   5, true,  CMD_HMGET },
+        { "HINCRBY", 7, true,  CMD_HINCRBY },
+        { "TYPE",    4, true,  CMD_TYPE },
+        { "MSET",    4, true,  CMD_MSET },
+        { "MGET",    4, true,  CMD_MGET },
+        { "PING",    4, false, CMD_PING },
+        { "INFO",    4, false, CMD_INFO },
+        { "TIME",    4, false, CMD_TIME },
+    };
 
-    if (strncmp(message, "TYPE", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_TYPE;
-    if (strncmp(message, "MSET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_MSET;
-    if (strncmp(message, "MGET", 4) == 0 && IS_SIMPLE_CMD_TERMINATOR(message[4])) return CMD_MGET;
+    const size_t num_commands = sizeof(commands) / sizeof(commands[0]);
+    size_t msg_len = strlen(message); //NOSONAR
+    for (size_t i = 0; i < num_commands; i++) {
+        const command_def_t *c = &commands[i];
+        if (msg_len < c->len) continue;             /* avoid OOB */
+        if (strncmp(message, c->name, c->len) != 0) continue;
+        char terminator = message[c->len];          /* safe now */
+        bool is_valid_terminator = c->simple_terminator
+            ? IS_SIMPLE_CMD_TERMINATOR(terminator)
+            : IS_CMD_TERMINATOR(terminator);
+        if (is_valid_terminator) return c->cmd;
+    }
 
-    if (strncmp(message, "PING", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_PING;
-    if (strncmp(message, "INFO", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_INFO;
-    if (strncmp(message, "TIME", 4) == 0 && IS_CMD_TERMINATOR(message[4])) return CMD_TIME;
-    
     return CMD_UNKNOWN;
 }
 
