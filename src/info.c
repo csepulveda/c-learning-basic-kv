@@ -2,6 +2,7 @@
 #include <time.h>
 #include <sys/resource.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "info.h"
 #include "kvstore.h"

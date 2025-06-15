@@ -13,7 +13,11 @@ The project supports basic commands similar to Redis:
 - `DEL key` — delete a key
 - `MSET key1 value1 key2 value2 ...` — store multiple key-value pairs
 - `MGET key1 key2 ...` — retrieve values of multiple keys
-- `TYPE KEY1` - retrive the Type of the value, eg: string
+- `HSET hash field value` — set a field in a hash
+- `HGET hash field` — get the value of a field in a hash
+- `HMGET hash field1 field2 ...` — get multiple fields from a hash
+- `HINCRBY hash field increment` — increment a hash field by a value
+- `TYPE key` - retrive the Type of the value, eg: string
 - `INFO`  - Information about the server.
 
 ## Project Structure

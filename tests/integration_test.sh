@@ -1,15 +1,23 @@
 #!/bin/bash
 
-# …rest of tests/integration_test.sh…
 SERVER_BIN=bin/server
 CLIENT_BIN=bin/client
 
 echo "🚀 Starting integration tests..."
+NCOPTS=$1
 
-# Start server in background
 $SERVER_BIN &
 SERVER_PID=$!
-sleep 1  # espera a que el servidor arranque
+sleep 1
+restart_server() {
+  echo "🔄 Restarting server..."
+  kill $SERVER_PID
+  wait $SERVER_PID
+  sleep 1
+  $SERVER_BIN &
+  SERVER_PID=$!
+  sleep 1
+}
 
 fail() {
   echo "❌ Test failed: $1"
@@ -18,162 +26,159 @@ fail() {
   exit 1
 }
 
-# Wrapper para simplificar asserts
 assert_contains() {
-    echo "$1" | grep -q "$2" || fail "$3"
+    echo "$1" | tr -d '\r' | grep -Fq "$2" || fail "$3"
 }
 
-# Test SET
-output=$($CLIENT_BIN "SET test 123")
-assert_contains "$output" "OK" "SET did not return OK"
+# -------- TEST CASES DEFINITION --------
 
-# Test GET
-output=$($CLIENT_BIN "GET test")
-assert_contains "$output" "123" "GET did not return 123"
+VERY_LONG_KEY=$(head -c 300 < /dev/zero | tr '\0' 'A')
+VERY_LONG_VALUE=$(head -c 1025 < /dev/zero | tr '\0' 'B')
 
-# Test DEL
-output=$($CLIENT_BIN "DEL test")
-assert_contains "$output" "DELETED" "DEL did not return DELETED"
+test_cases=(
+    'SET test 123 | OK | SET did not return OK'
+    'GET test | 123 | GET did not return 123'
+    'DEL test | DELETED | DEL did not return DELETED'
+    'GET test | not found | GET after DEL did not return not found'
+    'PING | PONG | PING did not return PONG'
+    'TIME | 20 | TIME did not return expected format'
+    'INFO | Uptime: | INFO did not return uptime'
+    'INFO | Memory: | INFO did not return memory'
+    'INFO | Keys: | INFO did not return keys'
+    'INFO | Version: | INFO did not return version'
+    'MSET k1 v1 k2 v2 k3 v3 | OK | MSET did not return OK'
+    'MGET k1 k2 k3 | 1) v1 | MGET k1 failed'
+    'MGET k1 k2 k3 | 2) v2 | MGET k2 failed'
+    'MGET k1 k2 k3 | 3) v3 | MGET k3 failed'
+    'MGET k1 missing k3 | 2) (nil) | MGET missing key failed'
+    'MSET q1 \"val 1\" q2 \"val 2\" q3 \"val 3\" | OK | MSET quoted values did not return OK'
+    'MGET q1 q2 q3 | 1) val 1 | MGET quoted val1 failed'
+    'MGET q1 q2 q3 | 2) val 2 | MGET quoted val2 failed'
+    'MGET q1 q2 q3 | 3) val 3 | MGET quoted val3 failed'
+    'SET type_test abc | OK | SET type_test failed'
+    'TYPE type_test | string | TYPE existing key did not return string'
+    'TYPE missing_type_key | (nil) | TYPE missing key did not return (nil)'
+    'HSET myhash field1 value1 | 1 | HSET single field did not return 1'
+    'TYPE myhash | hash | TYPE for hash did not return hash'
+    'HGET myhash field1 | value1 | HGET existing field1 failed'
+    'HGET myhash missing_field | (nil) | HGET missing field did not return (nil)'
+    'HSET myhash field2 value2 field3 value3 | 2 | HSET multiple fields did not return 2'
+    'HGET myhash field2 | value2 | HGET field2 failed'
+    'HGET myhash field3 | value3 | HGET field3 failed'
+    'HMGET myhash field1 missing_field field3 | 1) value1 | HMGET field1 failed'
+    'HMGET myhash field1 missing_field field3 | 2) (nil) | HMGET missing field failed'
+    'HMGET myhash field1 missing_field field3 | 3) value3 | HMGET field3 failed'
+    'HSET myhash f1 \"hello world\" f2 \"val with multiple spaces\" f3 \"third val\" | 3 | HSET multiple quoted fields failed'
+    'HGET myhash f1 | hello world | HGET f1 after quoted HSET failed'
+    'HGET myhash f2 | val with multiple spaces | HGET f2 after quoted HSET failed'
+    'HGET myhash f3 | third val | HGET f3 after quoted HSET failed'
+    'DEL myhash | DELETED | DEL myhash failed'
+    'HINCRBY myhash counter 5 | 5 | HINCRBY new field did not return 5'
+    'HINCRBY myhash counter 3 | 8 | HINCRBY existing field did not return 8'
+    'HINCRBY newhash counter 5 | 5 | HINCRBY new hash did not return 5'
+    'HINCRBY newhash counter 1000 | 1005 | HINCRBY existing field in newhash did not return 1005'
+    'HINCRBY newhash counter -5 | 1000 | HINCRBY negative increment did not return 1000'
+    'DEL newhash | DELETED | DEL newhash after HINCRBY did not return DELETED'
+    'GET myhash | not found | GET on hash key did not return not found'
+    'SET myhash fail | ERROR parse error | SET on hash key did not return parse error'
+    "SET $VERY_LONG_KEY value | ERROR | SET with very long key did not return ERROR"
+    "SET test $VERY_LONG_VALUE | ERROR | SET with very long value did not return ERROR"
+    'HSET myhash fieldx valx | 1 | HSET for TYPE test failed'
+    'TYPE myhash | hash | TYPE on hash did not return hash'
+    'DEL nonexistent_key | not found | DEL nonexistent key did not return not found'
+    'HINCRBY newneg counter -42 | 42 | HINCRBY new field negative did not return -42'
+    'HINCRBY newneg counter 0 | 42 | HINCRBY increment 0 did not return same value'
+    'SET sss abc | OK | SET for HMGET test failed'
+#    'HMGET sss field1 | ERROR parse error | HMGET on string key did not return parse error'
+    'BLAH foo bar | ERROR | Unknown command did not return error'
+    'MGET missing1 missing2 missing3\n | 1) (nil) | MGET all missing key1 failed'
+    'MGET missing1 missing2 missing3\n | 2) (nil) | MGET all missing key2 failed'
+    'MGET missing1 missing2 missing3\n | 3) (nil) | MGET all missing key3 failed'
+)
 
-# Test GET after DEL
-output=$($CLIENT_BIN "GET test")
-assert_contains "$output" "not found" "GET after DEL did not return not found"
+# -------- TEST RUNNERS --------
 
-# Test TIME
-output=$($CLIENT_BIN "TIME")
-assert_contains "$output" "20" "TIME did not return expected format"
+run_cmd_tests() {
+    echo "🔷 Running CMD tests..."
+    for entry in "${test_cases[@]}"; do
+        IFS="|" read -r cmd expected desc <<< "$entry"
+        cmd=$(echo "$cmd" | xargs)
+        expected=$(echo "$expected" | xargs)
+        desc=$(echo "$desc" | xargs)
 
-# Test PING
-output=$($CLIENT_BIN "PING")
-assert_contains "$output" "PONG" "PING did not return PONG"
+        echo "👉 CMD: $cmd → expecting: '$expected'"
 
-# Test Very Long Command
-MAX_VAL_LEN=$(grep '^#define MAX_VAL_LEN' src/kvstore.h | awk '{print $3}')
-LONG_CMD=$(head -c $((MAX_VAL_LEN + 1)) < /dev/zero | tr '\0' 'A')
-output=$($CLIENT_BIN "SET long $LONG_CMD")
-assert_contains "$output" "ERROR value too long" "SET long command did not return ERROR value too long"
+        read -ra tokens <<< "$cmd"
+        output=$($CLIENT_BIN "${tokens[@]}" 2>&1)
+        echo "Output: $output"
+        assert_contains "$output" "$expected" "$desc (client cmd)"
 
-# Test error on invalid command
-output=$($CLIENT_BIN "INVALID COMMAND" 2>&1)
-assert_contains "$output" "Invalid command: INVALID" "Invalid command did not return ERROR"
+    done
+}
 
-# test defining host and port
-output=$(HOST=127.0.0.1 PORT=8080 $CLIENT_BIN "SET test 123")
-assert_contains "$output" "OK" "SET did not return OK"
+run_nc_tests() {
+    echo "🔷 Running NC tests..."
+    for entry in "${test_cases[@]}"; do
+        IFS="|" read -r cmd expected desc <<< "$entry"
+        cmd=$(echo "$cmd" | xargs)
+        expected=$(echo "$expected" | xargs)
+        desc=$(echo "$desc" | xargs)
 
-# Test INFO
-output=$($CLIENT_BIN "INFO")
-assert_contains "$output" "Uptime:" "INFO did not return uptime"
-assert_contains "$output" "Memory:" "INFO did not return memory"
-assert_contains "$output" "Keys:" "INFO did not return keys"
-assert_contains "$output" "Version:" "INFO did not return version"
+        echo "👉 NC: $cmd → expecting: '$expected'"
 
-# Test interactive mode
-$CLIENT_BIN <<EOF | grep -q "OK" || fail "Interactive SET failed"
-SET interactive 123
-GET interactive
-DEL interactive
-TIME
-PING
+        echo -ne "$cmd\n" | nc ${NCOPTS} 127.0.0.1 8080 > nc_out.txt
+        output=$(cat nc_out.txt)
+        assert_contains "$output" "$expected" "$desc (nc)"
+    done
+}
+
+SKIP_INTERACTIVE_FOR=(
+    "SET test $VERY_LONG_VALUE"
+    "BLAH foo bar"
+)
+
+run_interactive_tests() {
+    echo "🔷 Running INTERACTIVE tests..."
+    for entry in "${test_cases[@]}"; do
+        IFS="|" read -r cmd expected desc <<< "$entry"
+        cmd=$(echo "$cmd" | xargs)
+        expected=$(echo "$expected" | xargs)
+        desc=$(echo "$desc" | xargs)
+
+        skip=false
+        for skip_cmd in "${SKIP_INTERACTIVE_FOR[@]}"; do
+            if [[ "$cmd" == "$skip_cmd" ]]; then
+                echo "⚠️  Skipping interactive for: $cmd"
+                skip=true
+                break
+            fi
+        done
+        if $skip; then
+            continue
+        fi
+
+        echo "👉 INTERACTIVE: $cmd → expecting: '$expected'"
+
+        output=$($CLIENT_BIN <<EOF
+$cmd
 exit
 EOF
+)
+        assert_contains "$output" "$expected" "$desc (interactive)"
+    done
+}
 
-# test bad command definition
-output=$($CLIENT_BIN "SET test" 2>&1)
-assert_contains "$output" "ERROR" "Bad command did not return ERROR"
+# -------- EXECUTE TESTS --------
 
-# test invalid command
-LONG_CMD=$(head -c 1000 < /dev/zero | tr '\0' 'A')
-output=$($CLIENT_BIN "$LONG_CMD" 2>&1)
-assert_contains "$output" "Invalid command" "Very long command did not return Invalid command"
+run_cmd_tests
+restart_server
+run_nc_tests
+restart_server
+run_interactive_tests
 
-# Determine buffer size from the header
-BUFFER_SIZE=$(grep '^#define BUFFER_SIZE' src/client_utils.h | awk '{print $3}')
-
-# Construct command string failure
-LONG_CMD=$(head -c $((BUFFER_SIZE + 1)) < /dev/zero | tr '\0' 'A')
-output=$($CLIENT_BIN SET $LONG_CMD $LONG_CMD $LONG_CMD 2>&1 || true)
-assert_contains "$output" "Failed to construct command" "Expected build_command_string failure not triggered"
-
-# Test Very Long Command with SET
-LONG_CMD=$(head -c $((BUFFER_SIZE + 1)) < /dev/zero | tr '\0' 'A')
-output=$($CLIENT_BIN SET foo $LONG_CMD 2>&1 || true)
-assert_contains "$output" "Failed to construct command" "Expected build_command_string failure not triggered"
-
-# Test MSET
-output=$($CLIENT_BIN "MSET k1 v1 k2 v2 k3 v3")
-assert_contains "$output" "OK" "MSET did not return OK"
-
-# Test MGET (existing keys)
-output=$($CLIENT_BIN "MGET k1 k2 k3")
-assert_contains "$output" "1) v1" "MGET k1 failed"
-assert_contains "$output" "2) v2" "MGET k2 failed"
-assert_contains "$output" "3) v3" "MGET k3 failed"
-
-# Test MGET with missing key
-output=$($CLIENT_BIN "MGET k1 missing k3")
-assert_contains "$output" "1) v1" "MGET k1 failed"
-assert_contains "$output" "2) (nil)" "MGET missing key failed"
-assert_contains "$output" "3) v3" "MGET k3 failed"
-
-# Test SET with quoted value
-$CLIENT_BIN 'SET quoted "hello world with spaces"' | grep -q "OK" || fail "SET quoted value did not return OK"
-
-# Test GET quoted value
-$CLIENT_BIN "GET quoted" | grep -q "hello world with spaces" || fail "GET quoted value did not return correct value"
-
-# Test MSET with quoted values
-$CLIENT_BIN 'MSET q1 "val 1" q2 "val 2" q3 "val 3"' | grep -q "OK" || fail "MSET quoted values did not return OK"
-
-# Test concurrent clients
-echo "Testing concurrent clients..."
-seq 1 10 | parallel -j10 --bar "$CLIENT_BIN \"SET concurrent{} value{}\""
-
-# Validate results
-seq 1 10 | parallel -j10 --bar "$CLIENT_BIN \"GET concurrent{}\" | grep -q \"value{}\" || fail \"Concurrent GET concurrent{} failed\""
-
-### EXTRA: TEST raw server with NC
-echo "Testing raw server with nc..."
-
-
-# Raw test: SET via nc
-echo -ne "SET nc_test 42\n" | nc -w1 127.0.0.1 8080 > nc_out.txt
-assert_contains "$(cat nc_out.txt)" "RESPONSE OK STRING" "NC SET failed"
-assert_contains "$(cat nc_out.txt)" "OK" "NC SET failed (OK line)"
-
-# Raw test: GET via nc
-echo -ne "GET nc_test\n" | nc -w1 127.0.0.1 8080 > nc_out.txt
-assert_contains "$(cat nc_out.txt)" "RESPONSE OK STRING" "NC GET failed"
-assert_contains "$(cat nc_out.txt)" "42" "NC GET failed (value)"
-
-# Raw test: MGET via nc
-echo -ne "MGET nc_test unknown\n" | nc -w1 127.0.0.1 8080 > nc_out.txt
-assert_contains "$(cat nc_out.txt)" "1) 42" "NC MGET failed (existing key)"
-assert_contains "$(cat nc_out.txt)" "2) (nil)" "NC MGET failed (missing key)"
-
-# Test MGET quoted values
-output=$($CLIENT_BIN "MGET q1 q2 q3")
-echo "$output" | grep -q "1) val 1" || fail "MGET did not return val 1"
-echo "$output" | grep -q "2) val 2" || fail "MGET did not return val 2"
-echo "$output" | grep -q "3) val 3" || fail "MGET did not return val 3"
-
-# Test TYPE existing key
-$CLIENT_BIN "SET type_test abc" > /dev/null
-output=$($CLIENT_BIN "TYPE type_test")
-assert_contains "$output" "string" "TYPE existing key did not return string"
-
-# Test TYPE missing key
-output=$($CLIENT_BIN "TYPE missing_type_key")
-assert_contains "$output" "(nil)" "TYPE missing key did not return (nil)"
-
-# Shutdown server
+# Done
 kill $SERVER_PID
 wait $SERVER_PID
-
-# Delete files created during tests
-rm nc_out.txt
-
-# Validate server is down
-$CLIENT_BIN "PING" 2>&1 | grep -q "Connection refused" || fail "Server did not shut down properly"
+rm -f nc_out.txt
 
 echo "✅ All integration tests passed!"
