@@ -20,10 +20,10 @@ static bool append_quoted_word(const char *word, char *buffer, size_t *offset, s
     if (!append_char(buffer, offset, buffer_size, '"')) return false;
 
     for (size_t j = 0; word[j] != '\0'; j++) {
-        if (word[j] == '"') {
-            if (!append_char(buffer, offset, buffer_size, '\\')) return false;
+        if ((word[j] == '"' && !append_char(buffer, offset, buffer_size, '\\')) ||
+            !append_char(buffer, offset, buffer_size, word[j])) {
+            return false;
         }
-        if (!append_char(buffer, offset, buffer_size, word[j])) return false;
     }
 
     return append_char(buffer, offset, buffer_size, '"');
